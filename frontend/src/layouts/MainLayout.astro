@@ -1,4 +1,8 @@
 ---
+// Import CSS files
+import '../styles/global.css';
+import '../styles/tokens.css';
+
 export interface Props {
   title: string;
   description?: string;
@@ -62,10 +66,6 @@ const fullTitle = title === siteName ? title : `${title} | ${siteName}`;
     <!-- Preload important resources -->
     <link rel="preload" href="/fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/jetbrains-mono.woff2" as="font" type="font/woff2" crossorigin />
-    
-    <!-- Stylesheets -->
-    <link rel="stylesheet" href="/styles/global.css" />
-    <link rel="stylesheet" href="/styles/tokens.css" />
     
     <!-- Theme detection script (inline to prevent FOUC) -->
     <script is:inline>
