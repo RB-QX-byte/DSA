@@ -531,11 +531,19 @@ button:focus {
 }
 
 .text-primary {
-  color: var(--color-primary);
+  color: var(--color-text-primary);
 }
 
 .text-secondary {
   color: var(--color-text-secondary);
+}
+
+.text-brand-primary {
+  color: var(--color-primary);
+}
+
+.text-accent {
+  color: var(--color-accent);
 }
 
 .text-muted {
@@ -544,16 +552,48 @@ button:focus {
 
 /* Background utilities */
 .bg-primary {
-  background-color: var(--color-primary);
+  background-color: var(--color-bg-primary);
 }
 
 .bg-secondary {
   background-color: var(--color-bg-secondary);
 }
 
+.bg-brand-primary {
+  background-color: var(--color-primary);
+}
+
+.bg-white {
+  background-color: var(--color-white);
+}
+
+.bg-gradient-to-br {
+  background: linear-gradient(to bottom right, var(--from-color, transparent), var(--to-color, transparent));
+}
+
+.from-primary {
+  --from-color: var(--color-primary);
+}
+
+.to-primary-dark {
+  --to-color: var(--color-primary-dark);
+}
+
 /* Border utilities */
 .border {
   border: 1px solid var(--color-border-primary);
+}
+
+.border-t {
+  border-top: 1px solid var(--color-border-primary);
+}
+
+.border-b {
+  border-bottom: 1px solid var(--color-border-primary);
+}
+
+.border-primary {
+  border-color: var(--color-border-primary);
 }
 
 .border-radius {
@@ -617,5 +657,102 @@ button:focus {
   
   .lg\:hidden {
     display: none;
+  }
+}
+
+/* Additional utility classes */
+.max-w-3xl {
+  max-width: 48rem;
+}
+
+.mx-auto {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.opacity-90 {
+  opacity: 0.9;
+}
+
+.rounded-lg {
+  border-radius: var(--border-radius-lg);
+}
+
+.font-semibold {
+  font-weight: var(--font-weight-semibold);
+}
+
+.font-bold {
+  font-weight: var(--font-weight-bold);
+}
+
+.px-8 {
+  padding-left: var(--space-8);
+  padding-right: var(--space-8);
+}
+
+.py-3 {
+  padding-top: var(--space-3);
+  padding-bottom: var(--space-3);
+}
+
+.py-20 {
+  padding-top: var(--space-20);
+  padding-bottom: var(--space-20);
+}
+
+.mb-6 {
+  margin-bottom: var(--space-6);
+}
+
+.mb-8 {
+  margin-bottom: var(--space-8);
+}
+
+.text-4xl {
+  font-size: var(--font-size-4xl);
+}
+
+.text-xl {
+  font-size: var(--font-size-xl);
+}
+
+.text-2xl {
+  font-size: var(--font-size-2xl);
+}
+
+.text-6xl {
+  font-size: var(--font-size-5xl);
+}
+
+.text-white {
+  color: var(--color-white);
+}
+
+.transition-colors {
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+/* Hover states */
+.hover\:bg-gray-100:hover {
+  background-color: var(--color-gray-100);
+}
+
+.hover\:bg-white:hover {
+  background-color: var(--color-white);
+}
+
+.hover\:text-primary:hover {
+  color: var(--color-text-primary);
+}
+
+/* Responsive text sizes */
+@media (min-width: 768px) {
+  .md\:text-6xl {
+    font-size: var(--font-size-5xl);
+  }
+  
+  .md\:text-2xl {
+    font-size: var(--font-size-2xl);
   }
 }
