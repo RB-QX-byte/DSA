@@ -1,0 +1,359 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import Button from '../components/Button.astro';
+import Card from '../components/Card.astro';
+import Tag from '../components/Tag.astro';
+import Badge from '../components/Badge.astro';
+import Avatar from '../components/Avatar.astro';
+import Modal from '../components/Modal.astro';
+import Progress from '../components/Progress.astro';
+---
+
+<MainLayout title="Component Showcase" description="A showcase of all available UI components in the design system." noIndex={true}>
+  <div class="container py-8">
+    <!-- Page Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl md:text-4xl font-bold mb-4">Component Showcase</h1>
+      <p class="text-secondary text-lg">
+        A comprehensive showcase of all available UI components in the CodeArena design system.
+      </p>
+    </div>
+    
+    <!-- Buttons Section -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-6">Buttons</h2>
+      
+      <div class="grid gap-6">
+        <!-- Button Variants -->
+        <Card>
+          <h3 class="text-lg font-semibold mb-4">Variants</h3>
+          <div class="flex flex-wrap gap-4">
+            <Button variant="primary">Primary</Button>
+            <Button variant="secondary">Secondary</Button>
+            <Button variant="success">Success</Button>
+            <Button variant="danger">Danger</Button>
+            <Button variant="warning">Warning</Button>
+            <Button variant="ghost">Ghost</Button>
+            <Button variant="outline">Outline</Button>
+          </div>
+        </Card>
+        
+        <!-- Button Sizes -->
+        <Card>
+          <h3 class="text-lg font-semibold mb-4">Sizes</h3>
+          <div class="flex flex-wrap items-center gap-4">
+            <Button size="xs">Extra Small</Button>
+            <Button size="sm">Small</Button>
+            <Button size="md">Medium</Button>
+            <Button size="lg">Large</Button>
+            <Button size="xl">Extra Large</Button>
+          </div>
+        </Card>
+        
+        <!-- Button States -->
+        <Card>
+          <h3 class="text-lg font-semibold mb-4">States</h3>
+          <div class="flex flex-wrap gap-4">
+            <Button>Normal</Button>
+            <Button disabled>Disabled</Button>
+            <Button href="/problems">Link Button</Button>
+          </div>
+        </Card>
+      </div>
+    </section>
+    
+    <!-- Cards Section -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-6">Cards</h2>
+      
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Card variant="default">
+          <h3 class="text-lg font-semibold mb-2">Default Card</h3>
+          <p class="text-secondary">This is a default card with standard styling.</p>
+        </Card>
+        
+        <Card variant="outlined">
+          <h3 class="text-lg font-semibold mb-2">Outlined Card</h3>
+          <p class="text-secondary">This card has a border outline.</p>
+        </Card>
+        
+        <Card variant="elevated">
+          <h3 class="text-lg font-semibold mb-2">Elevated Card</h3>
+          <p class="text-secondary">This card has a shadow for elevation.</p>
+        </Card>
+        
+        <Card variant="flat">
+          <h3 class="text-lg font-semibold mb-2">Flat Card</h3>
+          <p class="text-secondary">This card has no border or shadow.</p>
+        </Card>
+        
+        <Card hover clickable>
+          <h3 class="text-lg font-semibold mb-2">Interactive Card</h3>
+          <p class="text-secondary">This card has hover effects and is clickable.</p>
+        </Card>
+        
+        <Card padding="lg">
+          <h3 class="text-lg font-semibold mb-2">Large Padding</h3>
+          <p class="text-secondary">This card has larger padding.</p>
+        </Card>
+      </div>
+    </section>
+    
+    <!-- Tags Section -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-6">Tags</h2>
+      
+      <div class="grid gap-6">
+        <!-- Tag Variants -->
+        <Card>
+          <h3 class="text-lg font-semibold mb-4">Variants</h3>
+          <div class="flex flex-wrap gap-2">
+            <Tag variant="default">Default</Tag>
+            <Tag variant="primary">Primary</Tag>
+            <Tag variant="secondary">Secondary</Tag>
+            <Tag variant="success">Success</Tag>
+            <Tag variant="danger">Danger</Tag>
+            <Tag variant="warning">Warning</Tag>
+          </div>
+        </Card>
+        
+        <!-- Difficulty Tags -->
+        <Card>
+          <h3 class="text-lg font-semibold mb-4">Difficulty Tags</h3>
+          <div class="flex flex-wrap gap-2">
+            <Tag difficulty="easy">Easy</Tag>
+            <Tag difficulty="medium">Medium</Tag>
+            <Tag difficulty="hard">Hard</Tag>
+          </div>
+        </Card>
+        
+        <!-- Tag Sizes -->
+        <Card>
+          <h3 class="text-lg font-semibold mb-4">Sizes</h3>
+          <div class="flex flex-wrap items-center gap-2">
+            <Tag size="xs">Extra Small</Tag>
+            <Tag size="sm">Small</Tag>
+            <Tag size="md">Medium</Tag>
+            <Tag size="lg">Large</Tag>
+          </div>
+        </Card>
+        
+        <!-- Removable Tags -->
+        <Card>
+          <h3 class="text-lg font-semibold mb-4">Removable Tags</h3>
+          <div class="flex flex-wrap gap-2">
+            <Tag removable>Array</Tag>
+            <Tag removable>Hash Table</Tag>
+            <Tag removable>Dynamic Programming</Tag>
+          </div>
+        </Card>
+      </div>
+    </section>
+    
+    <!-- Badges Section -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-6">Badges</h2>
+      
+      <div class="grid gap-6">
+        <!-- Badge Variants -->
+        <Card>
+          <h3 class="text-lg font-semibold mb-4">Variants</h3>
+          <div class="flex flex-wrap gap-4">
+            <Badge variant="default">Default</Badge>
+            <Badge variant="primary">Primary</Badge>
+            <Badge variant="secondary">Secondary</Badge>
+            <Badge variant="success">Success</Badge>
+            <Badge variant="danger">Danger</Badge>
+            <Badge variant="warning">Warning</Badge>
+            <Badge variant="info">Info</Badge>
+          </div>
+        </Card>
+        
+        <!-- Badge Sizes -->
+        <Card>
+          <h3 class="text-lg font-semibold mb-4">Sizes</h3>
+          <div class="flex flex-wrap items-center gap-4">
+            <Badge size="sm">Small</Badge>
+            <Badge size="md">Medium</Badge>
+            <Badge size="lg">Large</Badge>
+          </div>
+        </Card>
+        
+        <!-- Pill Badges -->
+        <Card>
+          <h3 class="text-lg font-semibold mb-4">Pill Badges</h3>
+          <div class="flex flex-wrap gap-4">
+            <Badge pill>Pill Badge</Badge>
+            <Badge variant="primary" pill>Primary Pill</Badge>
+            <Badge variant="success" pill>Success Pill</Badge>
+          </div>
+        </Card>
+      </div>
+    </section>
+    
+    <!-- Avatars Section -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-6">Avatars</h2>
+      
+      <div class="grid gap-6">
+        <!-- Avatar Sizes -->
+        <Card>
+          <h3 class="text-lg font-semibold mb-4">Sizes</h3>
+          <div class="flex flex-wrap items-center gap-4">
+            <Avatar size="xs" initials="XS" />
+            <Avatar size="sm" initials="SM" />
+            <Avatar size="md" initials="MD" />
+            <Avatar size="lg" initials="LG" />
+            <Avatar size="xl" initials="XL" />
+            <Avatar size="2xl" initials="2XL" />
+          </div>
+        </Card>
+        
+        <!-- Avatar with Status -->
+        <Card>
+          <h3 class="text-lg font-semibold mb-4">Status Indicators</h3>
+          <div class="flex flex-wrap items-center gap-4">
+            <Avatar initials="ON" status="online" />
+            <Avatar initials="OF" status="offline" />
+            <Avatar initials="BS" status="busy" />
+            <Avatar initials="AW" status="away" />
+          </div>
+        </Card>
+      </div>
+    </section>
+    
+    <!-- Progress Section -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-6">Progress Bars</h2>
+      
+      <div class="grid gap-6">
+        <!-- Progress Variants -->
+        <Card>
+          <h3 class="text-lg font-semibold mb-4">Variants</h3>
+          <div class="space-y-4">
+            <Progress value={25} variant="primary" label="Primary Progress" showValue />
+            <Progress value={50} variant="secondary" label="Secondary Progress" showValue />
+            <Progress value={75} variant="success" label="Success Progress" showValue />
+            <Progress value={40} variant="danger" label="Danger Progress" showValue />
+            <Progress value={60} variant="warning" label="Warning Progress" showValue />
+          </div>
+        </Card>
+        
+        <!-- Progress Sizes -->
+        <Card>
+          <h3 class="text-lg font-semibold mb-4">Sizes</h3>
+          <div class="space-y-4">
+            <Progress value={33} size="sm" label="Small Progress" />
+            <Progress value={66} size="md" label="Medium Progress" />
+            <Progress value={80} size="lg" label="Large Progress" />
+          </div>
+        </Card>
+        
+        <!-- Animated Progress -->
+        <Card>
+          <h3 class="text-lg font-semibold mb-4">Animated Progress</h3>
+          <div class="space-y-4">
+            <Progress value={45} animated label="Animated Progress" showValue />
+            <Progress value={70} animated variant="success" label="Loading..." />
+          </div>
+        </Card>
+      </div>
+    </section>
+    
+    <!-- Modal Section -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-6">Modals</h2>
+      
+      <Card>
+        <h3 class="text-lg font-semibold mb-4">Modal Examples</h3>
+        <div class="flex flex-wrap gap-4">
+          <Button onclick="openModal('modal-small')">Small Modal</Button>
+          <Button onclick="openModal('modal-medium')">Medium Modal</Button>
+          <Button onclick="openModal('modal-large')">Large Modal</Button>
+        </div>
+      </Card>
+    </section>
+    
+    <!-- Component Usage -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-6">Usage Examples</h2>
+      
+      <div class="grid gap-6">
+        <Card>
+          <h3 class="text-lg font-semibold mb-4">Problem Card Example</h3>
+          <div class="space-y-4">
+            <div class="flex items-center gap-4">
+              <h4 class="text-xl font-semibold">Two Sum</h4>
+              <Tag difficulty="easy">Easy</Tag>
+              <Badge variant="success">49.2% accepted</Badge>
+            </div>
+            <p class="text-secondary">
+              Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.
+            </p>
+            <div class="flex flex-wrap gap-2">
+              <Tag>Array</Tag>
+              <Tag>Hash Table</Tag>
+            </div>
+            <div class="flex gap-2">
+              <Button size="sm">Solve</Button>
+              <Button variant="outline" size="sm">View Editorial</Button>
+            </div>
+          </div>
+        </Card>
+        
+        <Card>
+          <h3 class="text-lg font-semibold mb-4">User Profile Example</h3>
+          <div class="flex items-center gap-4">
+            <Avatar size="lg" initials="JD" status="online" />
+            <div>
+              <h4 class="font-semibold">John Doe</h4>
+              <p class="text-secondary">Competitive Programmer</p>
+              <div class="flex gap-2 mt-2">
+                <Badge variant="primary">Expert</Badge>
+                <Badge variant="success">1547 Rating</Badge>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4">
+            <Progress value={75} label="Contest Progress" showValue />
+          </div>
+        </Card>
+      </div>
+    </section>
+  </div>
+  
+  <!-- Modal Components -->
+  <Modal id="modal-small" title="Small Modal" size="sm">
+    <p>This is a small modal with minimal content.</p>
+    <div class="mt-4 flex gap-2">
+      <Button onclick="closeModal('modal-small')">Close</Button>
+    </div>
+  </Modal>
+  
+  <Modal id="modal-medium" title="Medium Modal" size="md">
+    <p>This is a medium-sized modal with more content space.</p>
+    <p class="mt-2">You can include multiple paragraphs, forms, or other content here.</p>
+    <div class="mt-4 flex gap-2">
+      <Button onclick="closeModal('modal-medium')">Close</Button>
+      <Button variant="outline" onclick="closeModal('modal-medium')">Cancel</Button>
+    </div>
+  </Modal>
+  
+  <Modal id="modal-large" title="Large Modal" size="lg">
+    <p>This is a large modal with plenty of space for complex content.</p>
+    <div class="mt-4 space-y-4">
+      <div>
+        <label class="block text-sm font-medium mb-2">Example Form Field</label>
+        <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="Enter some text">
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-2">Progress Example</label>
+        <Progress value={60} label="Upload Progress" showValue />
+      </div>
+    </div>
+    <div class="mt-6 flex gap-2">
+      <Button onclick="closeModal('modal-large')">Save</Button>
+      <Button variant="outline" onclick="closeModal('modal-large')">Cancel</Button>
+    </div>
+  </Modal>
+</MainLayout>

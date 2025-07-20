@@ -1,0 +1,246 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import CodeEditor from '../components/CodeEditor.astro';
+---
+
+<MainLayout title="Monaco Editor Test">
+  <main class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Monaco Editor Integration Test</h1>
+    
+    <div class="space-y-8">
+      <!-- Basic JavaScript Editor -->
+      <section>
+        <h2 class="text-xl font-semibold mb-4">JavaScript Editor</h2>
+        <CodeEditor 
+          id="js-editor"
+          language="javascript"
+          theme="vs-dark"
+          height="300px"
+          defaultValue={`// JavaScript Example
+function fibonacci(n) {
+    if (n <= 1) return n;
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+console.log(fibonacci(10));`}
+        />
+      </section>
+
+      <!-- Python Editor with Language Selector -->
+      <section>
+        <h2 class="text-xl font-semibold mb-4">Python Editor with Language Selector</h2>
+        <CodeEditor 
+          id="python-editor"
+          language="python"
+          theme="vs-dark"
+          height="300px"
+          showLanguageSelector={true}
+          supportedLanguages={['python', 'javascript', 'java', 'cpp']}
+          defaultValue={`# Python Example
+def binary_search(arr, target):
+    left, right = 0, len(arr) - 1
+    while left <= right:
+        mid = (left + right) // 2
+        if arr[mid] == target:
+            return mid
+        elif arr[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+    return -1
+
+# Test the function
+arr = [1, 3, 5, 7, 9, 11, 13]
+result = binary_search(arr, 7)
+print(f"Index of 7: {result}")`}
+        />
+      </section>
+
+      <!-- C++ Editor -->
+      <section>
+        <h2 class="text-xl font-semibold mb-4">C++ Editor</h2>
+        <CodeEditor 
+          id="cpp-editor"
+          language="cpp"
+          theme="vs-dark"
+          height="350px"
+          defaultValue={`#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+    
+    vector<int> arr = {64, 34, 25, 12, 22, 11, 90};
+    
+    // Bubble sort
+    for (int i = 0; i < arr.size() - 1; i++) {
+        for (int j = 0; j < arr.size() - i - 1; j++) {
+            if (arr[j] > arr[j + 1]) {
+                swap(arr[j], arr[j + 1]);
+            }
+        }
+    }
+    
+    cout << "Sorted array: ";
+    for (int x : arr) {
+        cout << x << " ";
+    }
+    cout << endl;
+    
+    return 0;
+}`}
+        />
+      </section>
+
+      <!-- Light Theme Editor -->
+      <section>
+        <h2 class="text-xl font-semibold mb-4">Light Theme Editor</h2>
+        <CodeEditor 
+          id="light-editor"
+          language="java"
+          theme="light"
+          height="300px"
+          defaultValue={`import java.util.*;
+
+public class QuickSort {
+    public static void quickSort(int[] arr, int low, int high) {
+        if (low < high) {
+            int pi = partition(arr, low, high);
+            quickSort(arr, low, pi - 1);
+            quickSort(arr, pi + 1, high);
+        }
+    }
+    
+    public static int partition(int[] arr, int low, int high) {
+        int pivot = arr[high];
+        int i = (low - 1);
+        
+        for (int j = low; j < high; j++) {
+            if (arr[j] < pivot) {
+                i++;
+                int temp = arr[i];
+                arr[i] = arr[j];
+                arr[j] = temp;
+            }
+        }
+        
+        int temp = arr[i + 1];
+        arr[i + 1] = arr[high];
+        arr[high] = temp;
+        
+        return i + 1;
+    }
+    
+    public static void main(String[] args) {
+        int[] arr = {10, 7, 8, 9, 1, 5};
+        quickSort(arr, 0, arr.length - 1);
+        System.out.println(Arrays.toString(arr));
+    }
+}`}
+        />
+      </section>
+
+      <!-- Mobile Test Section -->
+      <section>
+        <h2 class="text-xl font-semibold mb-4">Mobile Responsive Test</h2>
+        <p class="text-gray-600 mb-4">
+          This editor should adapt to different screen sizes. Test on mobile devices or use browser dev tools.
+        </p>
+        <CodeEditor 
+          id="mobile-editor"
+          language="python"
+          theme="vs-dark"
+          height="200px"
+          showLanguageSelector={true}
+          defaultValue={`# Mobile responsive test
+# This editor should work well on mobile devices
+
+def hello_world():
+    print("Hello from mobile!")
+    
+hello_world()`}
+        />
+      </section>
+    </div>
+
+    <!-- Test Instructions -->
+    <div class="mt-12 p-6 bg-gray-100 rounded-lg">
+      <h2 class="text-xl font-semibold mb-4">Testing Instructions</h2>
+      <div class="space-y-4 text-sm">
+        <div>
+          <h3 class="font-medium">Basic Functionality:</h3>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>Type code in each editor to test syntax highlighting</li>
+            <li>Try auto-completion by typing common keywords (e.g., "Math." in JavaScript)</li>
+            <li>Test bracket matching and auto-closing</li>
+            <li>Hover over functions to see documentation</li>
+          </ul>
+        </div>
+        
+        <div>
+          <h3 class="font-medium">Language Switching:</h3>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>Use the language selector to switch between different languages</li>
+            <li>Verify syntax highlighting changes appropriately</li>
+          </ul>
+        </div>
+        
+        <div>
+          <h3 class="font-medium">Mobile Testing:</h3>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>Open browser dev tools and test mobile viewport sizes</li>
+            <li>Test touch scrolling and text selection</li>
+            <li>Verify language selector is touch-friendly</li>
+            <li>Test double-tap to select words</li>
+          </ul>
+        </div>
+        
+        <div>
+          <h3 class="font-medium">Cross-Browser Testing:</h3>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>Test in Chrome, Firefox, Safari, and Edge</li>
+            <li>Verify consistent appearance and functionality</li>
+            <li>Check that all features work across browsers</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </main>
+</MainLayout>
+
+<style>
+  .container {
+    max-width: 1200px;
+  }
+  
+  section {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+</style>
+
+<script>
+  // Add some test functionality
+  document.addEventListener('monaco-editor-ready', (event) => {
+    const { editor, container, language } = event.detail;
+    console.log(`Monaco editor ready for ${container.id} with language: ${language}`);
+    
+    // Add a test command to each editor
+    editor.addAction({
+      id: 'test-action',
+      label: 'Test Action',
+      keybindings: [
+        monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyT
+      ],
+      run: function(ed) {
+        alert(`Test action triggered in ${container.id}!`);
+      }
+    });
+  });
+</script>

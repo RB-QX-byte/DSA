@@ -1,0 +1,121 @@
+---
+export interface Props {
+  value: number;
+  max?: number;
+  size?: 'sm' | 'md' | 'lg';
+  variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'warning';
+  label?: string;
+  showValue?: boolean;
+  animated?: boolean;
+  class?: string;
+  [key: string]: any;
+}
+
+const {
+  value,
+  max = 100,
+  size = 'md',
+  variant = 'primary',
+  label,
+  showValue = false,
+  animated = false,
+  class: className = '',
+  ...props
+} = Astro.props;
+
+const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
+
+const baseClasses = 'w-full bg-gray-200 rounded-full overflow-hidden';
+
+const sizeClasses = {
+  sm: 'h-2',
+  md: 'h-3',
+  lg: 'h-4'
+};
+
+const variantClasses = {
+  primary: 'bg-primary',
+  secondary: 'bg-gray-600',
+  success: 'bg-success',
+  danger: 'bg-danger',
+  warning: 'bg-warning'
+};
+
+const animatedClasses = animated ? 'transition-all duration-300 ease-out' : '';
+
+const containerClasses = `${baseClasses} ${sizeClasses[size]} ${className}`;
+const barClasses = `h-full ${variantClasses[variant]} ${animatedClasses}`;
+---
+
+<div class="w-full" {...props}>
+  {(label || showValue) && (
+    <div class="flex justify-between items-center mb-2">
+      {label && (
+        <span class="text-sm font-medium text-primary">
+          {label}
+        </span>
+      )}
+      {showValue && (
+        <span class="text-sm text-secondary">
+          {Math.round(percentage)}%
+        </span>
+      )}
+    </div>
+  )}
+  
+  <div class={containerClasses}>
+    <div 
+      class={barClasses}
+      style={`width: ${percentage}%`}
+      role="progressbar"
+      aria-valuenow={value}
+      aria-valuemin="0"
+      aria-valuemax={max}
+      aria-label={label || `Progress: ${Math.round(percentage)}%`}
+    >
+      {animated && (
+        <div class="h-full bg-white bg-opacity-20 animate-pulse"></div>
+      )}
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Custom progress bar styles */
+  .progress-bar-striped {
+    background-image: linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.15) 25%,
+      transparent 25%,
+      transparent 50%,
+      rgba(255, 255, 255, 0.15) 50%,
+      rgba(255, 255, 255, 0.15) 75%,
+      transparent 75%,
+      transparent
+    );
+    background-size: 1rem 1rem;
+  }
+  
+  .progress-bar-animated {
+    animation: progress-bar-stripes 1s linear infinite;
+  }
+  
+  @keyframes progress-bar-stripes {
+    0% {
+      background-position: 1rem 0;
+    }
+    100% {
+      background-position: 0 0;
+    }
+  }
+  
+  /* Dark theme adjustments */
+  [data-theme="dark"] .progress-background {
+    background-color: rgba(75, 85, 99, 0.3);
+  }
+  
+  /* Smooth transitions */
+  .progress-smooth {
+    transition: width 0.6s ease;
+  }
+</style>

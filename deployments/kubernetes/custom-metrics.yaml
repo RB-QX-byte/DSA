@@ -1,0 +1,413 @@
+apiVersion: v1
+kind: ServiceMonitor
+metadata:
+  name: judge-worker-metrics
+  namespace: competitive-programming-monitoring
+  labels:
+    app: judge-worker
+    component: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: judge-worker
+  endpoints:
+  - port: metrics
+    path: /metrics
+    interval: 15s
+    scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+    - competitive-programming
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: judge-worker-rules
+  namespace: competitive-programming-monitoring
+  labels:
+    app: judge-worker
+    component: monitoring
+spec:
+  groups:
+  - name: judge.worker.rules
+    interval: 15s
+    rules:
+    
+    # Queue depth metric
+    - record: judge:queue_depth
+      expr: redis_list_length{list="judge_queue"}
+      labels:
+        service: judge-worker
+    
+    # Active submissions per pod
+    - record: judge:active_submissions_per_pod
+      expr: |
+        (
+          sum by (pod) (judge_active_submissions{job="judge-worker"})
+        )
+      labels:
+        service: judge-worker
+    
+    # Average response time
+    - record: judge:avg_response_time_seconds
+      expr: |
+        (
+          rate(judge_response_time_seconds_sum{job="judge-worker"}[2m]) /
+          rate(judge_response_time_seconds_count{job="judge-worker"}[2m])
+        )
+      labels:
+        service: judge-worker
+    
+    # Error rate
+    - record: judge:error_rate
+      expr: |
+        (
+          rate(judge_errors_total{job="judge-worker"}[2m]) /
+          rate(judge_requests_total{job="judge-worker"}[2m])
+        ) * 100
+      labels:
+        service: judge-worker
+    
+    # Queue processing rate
+    - record: judge:queue_processing_rate
+      expr: |
+        rate(judge_processed_submissions_total{job="judge-worker"}[2m])
+      labels:
+        service: judge-worker
+    
+    # CPU utilization per pod
+    - record: judge:cpu_utilization_percent
+      expr: |
+        (
+          rate(container_cpu_usage_seconds_total{pod=~"judge-worker-.*", container="judge-worker"}[2m]) * 100
+        )
+      labels:
+        service: judge-worker
+    
+    # Memory utilization per pod
+    - record: judge:memory_utilization_percent
+      expr: |
+        (
+          container_memory_working_set_bytes{pod=~"judge-worker-.*", container="judge-worker"} /
+          container_spec_memory_limit_bytes{pod=~"judge-worker-.*", container="judge-worker"}
+        ) * 100
+      labels:
+        service: judge-worker
+
+  - name: judge.worker.alerts
+    interval: 15s
+    rules:
+    
+    # High queue depth alert
+    - alert: JudgeQueueDepthHigh
+      expr: judge:queue_depth > 50
+      for: 2m
+      labels:
+        severity: warning
+        service: judge-worker
+      annotations:
+        summary: "Judge queue depth is high"
+        description: "Judge queue depth is {{ $value }}, which is above the threshold of 50"
+    
+    # Very high queue depth alert
+    - alert: JudgeQueueDepthCritical
+      expr: judge:queue_depth > 100
+      for: 1m
+      labels:
+        severity: critical
+        service: judge-worker
+      annotations:
+        summary: "Judge queue depth is critically high"
+        description: "Judge queue depth is {{ $value }}, which is above the critical threshold of 100"
+    
+    # High response time alert
+    - alert: JudgeResponseTimeHigh
+      expr: judge:avg_response_time_seconds > 5
+      for: 3m
+      labels:
+        severity: warning
+        service: judge-worker
+      annotations:
+        summary: "Judge response time is high"
+        description: "Average judge response time is {{ $value }}s, which is above the threshold of 5s"
+    
+    # High error rate alert
+    - alert: JudgeErrorRateHigh
+      expr: judge:error_rate > 5
+      for: 2m
+      labels:
+        severity: warning
+        service: judge-worker
+      annotations:
+        summary: "Judge error rate is high"
+        description: "Judge error rate is {{ $value }}%, which is above the threshold of 5%"
+    
+    # No judge workers available
+    - alert: JudgeWorkersDown
+      expr: up{job="judge-worker"} == 0
+      for: 1m
+      labels:
+        severity: critical
+        service: judge-worker
+      annotations:
+        summary: "No judge workers are available"
+        description: "All judge workers are down or unreachable"
+
+---
+apiVersion: apiregistration.k8s.io/v1
+kind: APIService
+metadata:
+  name: v1beta1.custom.metrics.k8s.io
+  labels:
+    app: prometheus-adapter
+    component: custom-metrics
+spec:
+  service:
+    name: prometheus-adapter
+    namespace: competitive-programming-monitoring
+  group: custom.metrics.k8s.io
+  version: v1beta1
+  insecureSkipTLSVerify: true
+  groupPriorityMinimum: 100
+  versionPriority: 100
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus-adapter
+  namespace: competitive-programming-monitoring
+  labels:
+    app: prometheus-adapter
+    component: custom-metrics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus-adapter
+  template:
+    metadata:
+      labels:
+        app: prometheus-adapter
+        component: custom-metrics
+    spec:
+      serviceAccountName: prometheus-adapter
+      containers:
+      - name: prometheus-adapter
+        image: k8s.gcr.io/prometheus-adapter/prometheus-adapter:v0.11.0
+        args:
+        - --cert-dir=/var/run/serving-cert
+        - --config=/etc/adapter/config.yaml
+        - --logtostderr=true
+        - --prometheus-url=http://prometheus.competitive-programming-monitoring.svc:9090/
+        - --metrics-relist-interval=1m
+        - --v=4
+        ports:
+        - containerPort: 6443
+          name: https
+        volumeMounts:
+        - mountPath: /etc/adapter/
+          name: config
+          readOnly: true
+        - mountPath: /var/run/serving-cert
+          name: volume-serving-cert
+          readOnly: true
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 250m
+            memory: 256Mi
+      volumes:
+      - name: config
+        configMap:
+          name: prometheus-adapter-config
+      - name: volume-serving-cert
+        secret:
+          secretName: prometheus-adapter-certs
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-adapter-config
+  namespace: competitive-programming-monitoring
+  labels:
+    app: prometheus-adapter
+    component: custom-metrics
+data:
+  config.yaml: |
+    rules:
+    # Custom metrics for judge worker autoscaling
+    - seriesQuery: 'judge:queue_depth{service="judge-worker"}'
+      resources:
+        overrides:
+          service:
+            resource: service
+      name:
+        matches: "^judge:(.+)"
+        as: "judge_${1}"
+      metricsQuery: '<<.Series>>{<<.LabelMatchers>>}'
+    
+    - seriesQuery: 'judge:active_submissions_per_pod{service="judge-worker"}'
+      resources:
+        overrides:
+          service:
+            resource: service
+      name:
+        matches: "^judge:(.+)"
+        as: "judge_${1}"
+      metricsQuery: 'avg(<<.Series>>{<<.LabelMatchers>>}) by (<<.GroupBy>>)'
+    
+    - seriesQuery: 'judge:avg_response_time_seconds{service="judge-worker"}'
+      resources:
+        overrides:
+          service:
+            resource: service
+      name:
+        matches: "^judge:(.+)"
+        as: "judge_${1}"
+      metricsQuery: 'avg(<<.Series>>{<<.LabelMatchers>>}) by (<<.GroupBy>>)'
+    
+    - seriesQuery: 'judge:queue_processing_rate{service="judge-worker"}'
+      resources:
+        overrides:
+          service:
+            resource: service
+      name:
+        matches: "^judge:(.+)"
+        as: "judge_${1}"
+      metricsQuery: 'sum(<<.Series>>{<<.LabelMatchers>>}) by (<<.GroupBy>>)'
+    
+    # Resource metrics for pods
+    - seriesQuery: 'container_cpu_usage_seconds_total{pod!="",container!="POD",container!=""}'
+      resources:
+        overrides:
+          namespace: {resource: "namespace"}
+          pod: {resource: "pod"}
+          container: {resource: "container"}
+      name:
+        matches: "^container_(.+)_usage_seconds_total"
+        as: "${1}_usage_rate"
+      metricsQuery: 'rate(<<.Series>>{<<.LabelMatchers>>}[2m])'
+    
+    - seriesQuery: 'container_memory_working_set_bytes{pod!="",container!="POD",container!=""}'
+      resources:
+        overrides:
+          namespace: {resource: "namespace"}
+          pod: {resource: "pod"}
+          container: {resource: "container"}
+      name:
+        matches: "^container_(.+)_working_set_bytes"
+        as: "${1}_working_set"
+      metricsQuery: '<<.Series>>{<<.LabelMatchers>>}'
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus-adapter
+  namespace: competitive-programming-monitoring
+  labels:
+    app: prometheus-adapter
+    component: custom-metrics
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus-adapter
+  labels:
+    app: prometheus-adapter
+    component: custom-metrics
+rules:
+- apiGroups: [""]
+  resources: ["nodes", "nodes/stats", "namespaces", "pods", "services"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-adapter
+  labels:
+    app: prometheus-adapter
+    component: custom-metrics
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus-adapter
+subjects:
+- kind: ServiceAccount
+  name: prometheus-adapter
+  namespace: competitive-programming-monitoring
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: custom-metrics-server-resources
+  labels:
+    app: prometheus-adapter
+    component: custom-metrics
+rules:
+- apiGroups: ["custom.metrics.k8s.io"]
+  resources: ["*"]
+  verbs: ["*"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: custom-metrics:system:auth-delegator
+  labels:
+    app: prometheus-adapter
+    component: custom-metrics
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator
+subjects:
+- kind: ServiceAccount
+  name: prometheus-adapter
+  namespace: competitive-programming-monitoring
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: custom-metrics-auth-reader
+  namespace: kube-system
+  labels:
+    app: prometheus-adapter
+    component: custom-metrics
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: extension-apiserver-authentication-reader
+subjects:
+- kind: ServiceAccount
+  name: prometheus-adapter
+  namespace: competitive-programming-monitoring
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-adapter
+  namespace: competitive-programming-monitoring
+  labels:
+    app: prometheus-adapter
+    component: custom-metrics
+spec:
+  ports:
+  - name: https
+    port: 443
+    targetPort: 6443
+  selector:
+    app: prometheus-adapter

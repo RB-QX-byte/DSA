@@ -1,0 +1,501 @@
+---
+export interface Props {
+  contestId: string;
+  initialLeaderboard?: any[];
+  showFullDetails?: boolean;
+  maxEntries?: number;
+  class?: string;
+}
+
+const { 
+  contestId, 
+  initialLeaderboard = [], 
+  showFullDetails = false, 
+  maxEntries = 10,
+  class: className = "" 
+} = Astro.props;
+---
+
+<div class={`realtime-leaderboard ${className}`}>
+  <!-- Connection Status -->
+  <div id="connectionStatus" class="connection-status mb-4 hidden">
+    <div class="flex items-center space-x-2 text-sm p-2 rounded-lg">
+      <div class="connection-dot w-2 h-2 rounded-full"></div>
+      <span class="connection-text">Connecting...</span>
+    </div>
+  </div>
+
+  <!-- Leaderboard Content -->
+  <div class="leaderboard-container">
+    <!-- Header -->
+    <div class="leaderboard-header sticky top-0 bg-white border-b border-gray-200 p-3">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900">Live Leaderboard</h3>
+        <div class="flex items-center space-x-2">
+          <span id="lastUpdated" class="text-xs text-gray-500"></span>
+          <button 
+            id="refreshBtn" 
+            class="p-1 text-gray-400 hover:text-gray-600 rounded"
+            title="Refresh leaderboard"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Leaderboard Table -->
+    <div class="leaderboard-content">
+      <table class="w-full">
+        <thead class="bg-gray-50 sticky top-16">
+          <tr>
+            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Rank
+            </th>
+            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Participant
+            </th>
+            <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Score
+            </th>
+            {showFullDetails && (
+              <>
+                <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Penalty
+                </th>
+                <th class="px-3 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Solved
+                </th>
+              </>
+            )}
+          </tr>
+        </thead>
+        <tbody id="leaderboardBody" class="bg-white divide-y divide-gray-200">
+          <!-- Leaderboard entries will be populated here -->
+        </tbody>
+      </table>
+      
+      <!-- Empty State -->
+      <div id="emptyState" class="hidden p-8 text-center text-gray-500">
+        <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+        <p>No participants yet</p>
+      </div>
+
+      <!-- Loading State -->
+      <div id="loadingState" class="p-8 text-center">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p class="text-gray-500">Loading leaderboard...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.realtime-leaderboard {
+  @apply bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden;
+}
+
+.leaderboard-container {
+  @apply relative;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.leaderboard-row {
+  @apply hover:bg-gray-50 transition-colors duration-150;
+}
+
+.leaderboard-row.current-user {
+  @apply bg-blue-50 border-l-4 border-blue-500;
+}
+
+.leaderboard-row.updated {
+  animation: highlightUpdate 1s ease-in-out;
+}
+
+@keyframes highlightUpdate {
+  0%, 100% { background-color: inherit; }
+  50% { background-color: #dbeafe; }
+}
+
+.rank-change {
+  @apply inline-flex items-center text-xs font-medium;
+}
+
+.rank-change.up {
+  @apply text-green-600;
+}
+
+.rank-change.down {
+  @apply text-red-600;
+}
+
+.rank-change.same {
+  @apply text-gray-400;
+}
+
+.connection-status {
+  transition: all 0.3s ease-in-out;
+}
+
+.connection-status.connected {
+  @apply bg-green-50 border border-green-200 text-green-700;
+}
+
+.connection-status.disconnected {
+  @apply bg-red-50 border border-red-200 text-red-700;
+}
+
+.connection-status.connecting {
+  @apply bg-yellow-50 border border-yellow-200 text-yellow-700;
+}
+
+.connection-dot.connected {
+  @apply bg-green-500;
+}
+
+.connection-dot.disconnected {
+  @apply bg-red-500;
+}
+
+.connection-dot.connecting {
+  @apply bg-yellow-500;
+  animation: pulse 2s infinite;
+}
+
+.problem-result {
+  @apply w-8 h-8 flex items-center justify-center text-xs font-medium rounded;
+}
+
+.problem-result.solved {
+  @apply bg-green-100 text-green-800;
+}
+
+.problem-result.attempted {
+  @apply bg-red-100 text-red-800;
+}
+
+.problem-result.pending {
+  @apply bg-gray-100 text-gray-500;
+}
+</style>
+
+<script define:vars={{ contestId, initialLeaderboard, showFullDetails, maxEntries }}>
+class RealtimeLeaderboard {
+  constructor(contestId, initialLeaderboard, showFullDetails, maxEntries) {
+    this.contestId = contestId;
+    this.leaderboard = [...(initialLeaderboard || [])];
+    this.showFullDetails = showFullDetails;
+    this.maxEntries = maxEntries;
+    this.eventSource = null;
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = 5;
+    this.reconnectDelay = 1000;
+    this.currentUserId = this.getCurrentUserId();
+    this.previousRanks = new Map();
+    
+    this.elements = {
+      body: document.getElementById('leaderboardBody'),
+      emptyState: document.getElementById('emptyState'),
+      loadingState: document.getElementById('loadingState'),
+      connectionStatus: document.getElementById('connectionStatus'),
+      lastUpdated: document.getElementById('lastUpdated'),
+      refreshBtn: document.getElementById('refreshBtn')
+    };
+    
+    this.init();
+  }
+
+  init() {
+    this.setupEventListeners();
+    this.connectToRealtime();
+    this.renderLeaderboard();
+    
+    // Initial data load if empty
+    if (this.leaderboard.length === 0) {
+      this.loadLeaderboard();
+    }
+  }
+
+  setupEventListeners() {
+    if (this.elements.refreshBtn) {
+      this.elements.refreshBtn.addEventListener('click', () => {
+        this.loadLeaderboard();
+      });
+    }
+  }
+
+  connectToRealtime() {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.warn('No auth token available for real-time connection');
+      return;
+    }
+
+    const sseUrl = `/api/v1/realtime/contests/${this.contestId}/sse?token=${encodeURIComponent(token)}`;
+    
+    this.eventSource = new EventSource(sseUrl);
+    
+    this.eventSource.onopen = () => {
+      console.log('Connected to real-time leaderboard updates');
+      this.reconnectAttempts = 0;
+      this.updateConnectionStatus('connected');
+    };
+
+    this.eventSource.addEventListener('leaderboard_update', (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.contest_id === this.contestId) {
+          this.handleLeaderboardUpdate(data);
+        }
+      } catch (error) {
+        console.error('Error parsing leaderboard update:', error);
+      }
+    });
+
+    this.eventSource.onerror = () => {
+      console.error('Real-time connection error');
+      this.updateConnectionStatus('disconnected');
+      this.handleReconnection();
+    };
+  }
+
+  handleReconnection() {
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.reconnectAttempts++;
+      this.updateConnectionStatus('connecting');
+      
+      setTimeout(() => {
+        this.connectToRealtime();
+      }, this.reconnectDelay * this.reconnectAttempts);
+    } else {
+      console.error('Max reconnection attempts reached');
+      this.updateConnectionStatus('disconnected');
+    }
+  }
+
+  updateConnectionStatus(status) {
+    if (!this.elements.connectionStatus) return;
+
+    const statusElement = this.elements.connectionStatus;
+    const dot = statusElement.querySelector('.connection-dot');
+    const text = statusElement.querySelector('.connection-text');
+
+    statusElement.className = `connection-status mb-4 ${status}`;
+    dot.className = `connection-dot w-2 h-2 rounded-full ${status}`;
+
+    const statusTexts = {
+      connected: 'Live updates active',
+      disconnected: 'Disconnected from live updates',
+      connecting: 'Connecting to live updates...'
+    };
+
+    text.textContent = statusTexts[status] || status;
+
+    // Show status for a few seconds, then hide if connected
+    statusElement.classList.remove('hidden');
+    if (status === 'connected') {
+      setTimeout(() => {
+        statusElement.classList.add('hidden');
+      }, 3000);
+    }
+  }
+
+  handleLeaderboardUpdate(data) {
+    // Store previous ranks for change indicators
+    this.leaderboard.forEach(entry => {
+      this.previousRanks.set(entry.user_id, entry.rank);
+    });
+
+    // Update leaderboard data
+    this.leaderboard = data.rankings || [];
+    
+    // Update last updated time
+    this.updateLastUpdatedTime(data.timestamp);
+    
+    // Re-render leaderboard
+    this.renderLeaderboard(true);
+  }
+
+  async loadLeaderboard() {
+    try {
+      this.showLoading(true);
+      
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/v1/contests/${this.contestId}/standings`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        this.leaderboard = data;
+        this.renderLeaderboard();
+        this.updateLastUpdatedTime();
+      } else {
+        throw new Error('Failed to load leaderboard');
+      }
+    } catch (error) {
+      console.error('Error loading leaderboard:', error);
+    } finally {
+      this.showLoading(false);
+    }
+  }
+
+  renderLeaderboard(isUpdate = false) {
+    if (!this.elements.body) return;
+
+    this.showLoading(false);
+
+    if (this.leaderboard.length === 0) {
+      this.elements.body.innerHTML = '';
+      this.elements.emptyState?.classList.remove('hidden');
+      return;
+    }
+
+    this.elements.emptyState?.classList.add('hidden');
+
+    // Limit entries if specified
+    const displayLeaderboard = this.maxEntries 
+      ? this.leaderboard.slice(0, this.maxEntries)
+      : this.leaderboard;
+
+    this.elements.body.innerHTML = displayLeaderboard.map(entry => 
+      this.createLeaderboardRow(entry, isUpdate)
+    ).join('');
+  }
+
+  createLeaderboardRow(entry, isUpdate = false) {
+    const isCurrentUser = entry.user_id === this.currentUserId;
+    const previousRank = this.previousRanks.get(entry.user_id);
+    const rankChange = this.getRankChange(entry.rank, previousRank);
+    
+    const rowClass = `leaderboard-row ${isCurrentUser ? 'current-user' : ''} ${isUpdate ? 'updated' : ''}`;
+
+    return `
+      <tr class="${rowClass}">
+        <td class="px-3 py-3 whitespace-nowrap">
+          <div class="flex items-center space-x-2">
+            <span class="text-sm font-medium text-gray-900">#${entry.rank}</span>
+            ${rankChange.html}
+          </div>
+        </td>
+        <td class="px-3 py-3 whitespace-nowrap">
+          <div class="flex items-center">
+            <div class="flex-shrink-0 h-8 w-8">
+              <div class="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center">
+                <span class="text-xs font-medium text-gray-700">
+                  ${entry.username.charAt(0).toUpperCase()}
+                </span>
+              </div>
+            </div>
+            <div class="ml-3">
+              <div class="text-sm font-medium text-gray-900">${entry.username}</div>
+              ${entry.full_name ? `<div class="text-xs text-gray-500">${entry.full_name}</div>` : ''}
+            </div>
+          </div>
+        </td>
+        <td class="px-3 py-3 whitespace-nowrap text-center">
+          <span class="text-sm font-semibold text-gray-900">${entry.total_points}</span>
+        </td>
+        ${this.showFullDetails ? `
+          <td class="px-3 py-3 whitespace-nowrap text-center">
+            <span class="text-sm text-gray-600">${entry.total_penalty}</span>
+          </td>
+          <td class="px-3 py-3 whitespace-nowrap text-center">
+            <span class="text-sm text-gray-600">${entry.problems_solved}</span>
+          </td>
+        ` : ''}
+      </tr>
+    `;
+  }
+
+  getRankChange(currentRank, previousRank) {
+    if (!previousRank || previousRank === currentRank) {
+      return { html: '', type: 'same' };
+    }
+
+    const change = previousRank - currentRank;
+    if (change > 0) {
+      return {
+        html: `<span class="rank-change up">↑${change}</span>`,
+        type: 'up'
+      };
+    } else if (change < 0) {
+      return {
+        html: `<span class="rank-change down">↓${Math.abs(change)}</span>`,
+        type: 'down'
+      };
+    }
+
+    return { html: '', type: 'same' };
+  }
+
+  showLoading(show) {
+    if (this.elements.loadingState) {
+      this.elements.loadingState.classList.toggle('hidden', !show);
+    }
+  }
+
+  updateLastUpdatedTime(timestamp) {
+    if (!this.elements.lastUpdated) return;
+
+    const time = timestamp ? new Date(timestamp) : new Date();
+    this.elements.lastUpdated.textContent = `Updated ${this.formatTimeAgo(time)}`;
+  }
+
+  formatTimeAgo(date) {
+    const now = new Date();
+    const diffMs = now - date;
+    const diffSec = Math.floor(diffMs / 1000);
+
+    if (diffSec < 60) return `${diffSec}s ago`;
+    if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+    return date.toLocaleTimeString();
+  }
+
+  getCurrentUserId() {
+    return localStorage.getItem('userId');
+  }
+
+  destroy() {
+    if (this.eventSource) {
+      this.eventSource.close();
+    }
+  }
+}
+
+// Initialize the realtime leaderboard
+let realtimeLeaderboard;
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    realtimeLeaderboard = new RealtimeLeaderboard(
+      contestId, 
+      initialLeaderboard, 
+      showFullDetails, 
+      maxEntries
+    );
+  });
+} else {
+  realtimeLeaderboard = new RealtimeLeaderboard(
+    contestId, 
+    initialLeaderboard, 
+    showFullDetails, 
+    maxEntries
+  );
+}
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+  if (realtimeLeaderboard) {
+    realtimeLeaderboard.destroy();
+  }
+});
+
+// Export for global access
+window.realtimeLeaderboard = realtimeLeaderboard;
+</script>

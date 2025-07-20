@@ -1,0 +1,422 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: chaos-engineering
+  labels:
+    purpose: chaos-engineering
+    isolation: true
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: chaos-monkey
+  namespace: chaos-engineering
+  labels:
+    component: chaos-engineering
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: chaos-monkey
+  labels:
+    component: chaos-engineering
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "nodes"]
+  verbs: ["get", "list", "delete", "create", "update", "patch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "statefulsets"]
+  verbs: ["get", "list", "delete", "create", "update", "patch"]
+- apiGroups: ["extensions"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "delete", "create", "update", "patch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: chaos-monkey
+  labels:
+    component: chaos-engineering
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: chaos-monkey
+subjects:
+- kind: ServiceAccount
+  name: chaos-monkey
+  namespace: chaos-engineering
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: chaos-scripts
+  namespace: chaos-engineering
+  labels:
+    component: chaos-engineering
+data:
+  pod-killer.sh: |
+    #!/bin/bash
+    set -e
+    
+    echo "Starting pod chaos testing..."
+    
+    NAMESPACE="competitive-programming"
+    TARGET_APPS=("judge-worker" "postgres" "redis")
+    
+    for app in "${TARGET_APPS[@]}"; do
+      echo "Chaos testing for $app..."
+      
+      # Get all pods for this app
+      PODS=$(kubectl get pods -n $NAMESPACE -l app=$app -o jsonpath='{.items[*].metadata.name}')
+      
+      if [ -z "$PODS" ]; then
+        echo "No pods found for app: $app"
+        continue
+      fi
+      
+      # Convert to array
+      POD_ARRAY=($PODS)
+      
+      # Kill random pod
+      if [ ${#POD_ARRAY[@]} -gt 0 ]; then
+        RANDOM_POD=${POD_ARRAY[$RANDOM % ${#POD_ARRAY[@]}]}
+        echo "Killing pod: $RANDOM_POD"
+        kubectl delete pod $RANDOM_POD -n $NAMESPACE
+        
+        # Wait and verify recovery
+        echo "Waiting for recovery..."
+        sleep 30
+        
+        # Check if new pod is running
+        kubectl wait --for=condition=Ready pods -l app=$app -n $NAMESPACE --timeout=300s
+        echo "Recovery verified for $app"
+      fi
+      
+      sleep 10
+    done
+  
+  network-chaos.sh: |
+    #!/bin/bash
+    set -e
+    
+    echo "Starting network chaos testing..."
+    
+    # Install network tools
+    apk add --no-cache iptables tc curl
+    
+    NAMESPACE="competitive-programming"
+    
+    # Test 1: Network latency injection
+    echo "Testing network latency resilience..."
+    
+    # Get service IPs
+    POSTGRES_IP=$(kubectl get svc postgres-service -n $NAMESPACE -o jsonpath='{.spec.clusterIP}')
+    REDIS_IP=$(kubectl get svc redis-service -n $NAMESPACE -o jsonpath='{.spec.clusterIP}')
+    
+    # Add network delay
+    tc qdisc add dev eth0 root netem delay 100ms 20ms
+    
+    # Test connectivity with delay
+    timeout 10 curl -f http://$REDIS_IP:6379 || echo "Redis connection failed with latency"
+    timeout 10 nc -z $POSTGRES_IP 5432 || echo "Postgres connection failed with latency"
+    
+    # Remove delay
+    tc qdisc del dev eth0 root netem
+    
+    # Test 2: Packet loss simulation
+    echo "Testing packet loss resilience..."
+    
+    # Add 5% packet loss
+    tc qdisc add dev eth0 root netem loss 5%
+    
+    # Test connectivity with packet loss
+    timeout 10 curl -f http://$REDIS_IP:6379 || echo "Redis connection failed with packet loss"
+    timeout 10 nc -z $POSTGRES_IP 5432 || echo "Postgres connection failed with packet loss"
+    
+    # Remove packet loss
+    tc qdisc del dev eth0 root netem
+    
+    echo "Network chaos testing completed"
+  
+  resource-exhaustion.sh: |
+    #!/bin/bash
+    set -e
+    
+    echo "Starting resource exhaustion chaos testing..."
+    
+    # Test 1: CPU stress
+    echo "Testing CPU stress resilience..."
+    stress-ng --cpu 4 --timeout 60s &
+    CPU_PID=$!
+    
+    # Monitor judge worker health during CPU stress
+    for i in {1..6}; do
+      sleep 10
+      kubectl get pods -n competitive-programming -l app=judge-worker
+      
+      # Test if judge workers are still responsive
+      kubectl exec -n competitive-programming \
+        $(kubectl get pods -n competitive-programming -l app=judge-worker -o jsonpath='{.items[0].metadata.name}') \
+        -- curl -f http://localhost:8081/health || echo "Health check failed during CPU stress"
+    done
+    
+    wait $CPU_PID || true
+    
+    # Test 2: Memory stress  
+    echo "Testing memory stress resilience..."
+    stress-ng --vm 2 --vm-bytes 1G --timeout 60s &
+    MEM_PID=$!
+    
+    # Monitor during memory stress
+    for i in {1..6}; do
+      sleep 10
+      kubectl top pods -n competitive-programming
+    done
+    
+    wait $MEM_PID || true
+    
+    # Test 3: Disk I/O stress
+    echo "Testing disk I/O stress resilience..."
+    stress-ng --io 4 --timeout 60s &
+    IO_PID=$!
+    
+    # Monitor during I/O stress
+    for i in {1..6}; do
+      sleep 10
+      kubectl exec -n competitive-programming \
+        $(kubectl get pods -n competitive-programming -l app=postgres -o jsonpath='{.items[0].metadata.name}') \
+        -- pg_isready || echo "Postgres not ready during I/O stress"
+    done
+    
+    wait $IO_PID || true
+    
+    echo "Resource exhaustion chaos testing completed"
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: chaos-pod-killer
+  namespace: chaos-engineering
+  labels:
+    component: chaos-engineering
+    chaos-type: pod-failure
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        component: chaos-engineering
+        chaos-type: pod-failure
+    spec:
+      restartPolicy: Never
+      serviceAccountName: chaos-monkey
+      
+      containers:
+      - name: chaos-pod-killer
+        image: alpine/k8s:latest
+        imagePullPolicy: Always
+        
+        command: ["/bin/sh"]
+        args: ["/scripts/pod-killer.sh"]
+        
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        
+        volumeMounts:
+        - name: chaos-scripts
+          mountPath: /scripts
+          readOnly: true
+      
+      volumes:
+      - name: chaos-scripts
+        configMap:
+          name: chaos-scripts
+          defaultMode: 0755
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: chaos-network-test
+  namespace: chaos-engineering
+  labels:
+    component: chaos-engineering
+    chaos-type: network-failure
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        component: chaos-engineering
+        chaos-type: network-failure
+    spec:
+      restartPolicy: Never
+      serviceAccountName: chaos-monkey
+      
+      securityContext:
+        runAsUser: 0  # Need root for network manipulation
+      
+      containers:
+      - name: chaos-network-tester
+        image: alpine/k8s:latest
+        imagePullPolicy: Always
+        
+        securityContext:
+          privileged: true  # Need privileged for network manipulation
+          capabilities:
+            add:
+            - NET_ADMIN
+            - SYS_ADMIN
+        
+        command: ["/bin/sh"]
+        args: ["/scripts/network-chaos.sh"]
+        
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        
+        volumeMounts:
+        - name: chaos-scripts
+          mountPath: /scripts
+          readOnly: true
+      
+      volumes:
+      - name: chaos-scripts
+        configMap:
+          name: chaos-scripts
+          defaultMode: 0755
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: chaos-resource-exhaustion
+  namespace: chaos-engineering
+  labels:
+    component: chaos-engineering
+    chaos-type: resource-exhaustion
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        component: chaos-engineering
+        chaos-type: resource-exhaustion
+    spec:
+      restartPolicy: Never
+      serviceAccountName: chaos-monkey
+      
+      containers:
+      - name: chaos-resource-tester
+        image: alpine/k8s:latest
+        imagePullPolicy: Always
+        
+        command: ["/bin/sh"]
+        args:
+        - -c
+        - |
+          set -e
+          apk add --no-cache stress-ng curl
+          /scripts/resource-exhaustion.sh
+        
+        resources:
+          requests:
+            cpu: 1000m
+            memory: 2Gi
+          limits:
+            cpu: 4000m
+            memory: 4Gi
+        
+        volumeMounts:
+        - name: chaos-scripts
+          mountPath: /scripts
+          readOnly: true
+      
+      volumes:
+      - name: chaos-scripts
+        configMap:
+          name: chaos-scripts
+          defaultMode: 0755
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: scheduled-chaos-test
+  namespace: chaos-engineering
+  labels:
+    component: chaos-engineering
+    chaos-type: scheduled
+spec:
+  schedule: "0 3 * * 1"  # Weekly on Monday at 3 AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          serviceAccountName: chaos-monkey
+          
+          containers:
+          - name: scheduled-chaos-runner
+            image: alpine/k8s:latest
+            imagePullPolicy: Always
+            
+            command: ["/bin/sh"]
+            args:
+            - -c
+            - |
+              set -e
+              echo "Running scheduled chaos engineering tests..."
+              
+              # Run pod killer test
+              /scripts/pod-killer.sh
+              
+              sleep 300  # 5 minutes between tests
+              
+              # Run network chaos test
+              apk add --no-cache iptables tc curl
+              /scripts/network-chaos.sh
+              
+              sleep 300
+              
+              # Run resource exhaustion test
+              apk add --no-cache stress-ng
+              /scripts/resource-exhaustion.sh
+              
+              echo "Scheduled chaos tests completed"
+            
+            resources:
+              requests:
+                cpu: 500m
+                memory: 1Gi
+              limits:
+                cpu: 2000m
+                memory: 2Gi
+            
+            volumeMounts:
+            - name: chaos-scripts
+              mountPath: /scripts
+              readOnly: true
+          
+          volumes:
+          - name: chaos-scripts
+            configMap:
+              name: chaos-scripts
+              defaultMode: 0755

@@ -1,0 +1,26 @@
+apiVersion: 1
+
+providers:
+  # Dashboard provider for system dashboards
+  - name: 'default'
+    orgId: 1
+    folder: ''
+    type: file
+    disableDeletion: false
+    editable: true
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/dashboards
+
+  # Dashboard provider for custom judge system dashboards
+  - name: 'judge-system'
+    orgId: 1
+    folder: 'Judge System'
+    type: file
+    disableDeletion: false
+    editable: true
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/dashboards/judge

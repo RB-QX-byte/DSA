@@ -1,0 +1,11 @@
+# Task ID: 9
+# Title: Enhance Judge System Security and Scalability
+# Status: pending
+# Dependencies: 3
+# Priority: low
+# Description: Harden the security of the code execution environment and prepare the infrastructure for large-scale traffic, as part of Phase 4.
+# Details:
+Implement a dual-layer sandbox (Isolate + Docker). Enforce resource limits with cgroups, disk quotas, and use seccomp-bpf for system call filtering. Configure horizontal scaling for judge workers using Kubernetes with auto-scaling policies based on queue depth.
+
+# Test Strategy:
+Penetration testing against the sandbox environment. Load testing to verify auto-scaling functionality and determine the maximum concurrent submission throughput while maintaining sub-5-second execution times.

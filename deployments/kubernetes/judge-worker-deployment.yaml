@@ -1,0 +1,345 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: judge-worker
+  namespace: competitive-programming
+  labels:
+    app: judge-worker
+    version: v1.0.0
+    component: compute
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: judge-worker
+  template:
+    metadata:
+      labels:
+        app: judge-worker
+        version: v1.0.0
+        component: compute
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+        seccomp.security.alpha.kubernetes.io/pod: "runtime/default"
+    spec:
+      serviceAccountName: judge-worker-sa
+      
+      # Security context for the pod
+      securityContext:
+        runAsNonRoot: false  # Need root for isolate and cgroups
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      
+      # Node selection
+      nodeSelector:
+        kubernetes.io/arch: amd64
+        node-type: compute-optimized
+      
+      tolerations:
+      - key: "compute-optimized"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+      
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - judge-worker
+              topologyKey: kubernetes.io/hostname
+      
+      # Init containers
+      initContainers:
+      - name: init-isolate
+        image: judge-worker:latest
+        imagePullPolicy: Always
+        command:
+        - sh
+        - -c
+        - |
+          echo "Initializing isolate environment..."
+          # Setup isolate boxes
+          for i in $(seq 0 15); do
+            isolate --box-id=$i --init || true
+          done
+          echo "Isolate initialization complete"
+        securityContext:
+          privileged: true
+          capabilities:
+            add:
+            - SYS_ADMIN
+            - SYS_CHROOT
+        volumeMounts:
+        - name: isolate-boxes
+          mountPath: /var/local/lib/isolate
+        - name: cgroup-root
+          mountPath: /sys/fs/cgroup
+          readOnly: false
+      
+      # Main containers
+      containers:
+      - name: judge-worker
+        image: judge-worker:latest
+        imagePullPolicy: Always
+        
+        # Security context for the container
+        securityContext:
+          privileged: true  # Required for isolate and cgroups
+          allowPrivilegeEscalation: true
+          capabilities:
+            add:
+            - SYS_ADMIN
+            - SYS_CHROOT
+            - SETUID
+            - SETGID
+            drop:
+            - NET_ADMIN
+            - NET_RAW
+            - SYS_MODULE
+            - SYS_RAWIO
+          readOnlyRootFilesystem: false  # Isolate needs write access
+        
+        # Environment variables
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: judge-worker-secrets
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: judge-worker-secrets
+              key: REDIS_URL
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: judge-worker-secrets
+              key: JWT_SECRET
+        - name: JUDGE_VERSION
+          value: "1.0.0"
+        - name: HEALTH_PORT
+          value: "8081"
+        - name: METRICS_PORT
+          value: "9090"
+        - name: LOG_LEVEL
+          value: "info"
+        - name: WORKER_CONCURRENCY
+          value: "4"
+        - name: SANDBOX_TYPE
+          value: "dual-layer"
+        - name: ENABLE_MONITORING
+          value: "true"
+        
+        # Resource limits and requests
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+            ephemeral-storage: "2Gi"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+            ephemeral-storage: "4Gi"
+        
+        # Health checks
+        livenessProbe:
+          httpGet:
+            path: /live
+            port: 8081
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8081
+            scheme: HTTP
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        
+        # Startup probe for slower initialization
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8081
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 10
+        
+        # Ports
+        ports:
+        - name: health
+          containerPort: 8081
+          protocol: TCP
+        - name: metrics
+          containerPort: 9090
+          protocol: TCP
+        
+        # Volume mounts
+        volumeMounts:
+        - name: judge-config
+          mountPath: /etc/judge
+          readOnly: true
+        - name: isolate-boxes
+          mountPath: /var/local/lib/isolate
+        - name: tmp-volume
+          mountPath: /tmp
+        - name: var-tmp-volume
+          mountPath: /var/tmp
+        - name: cgroup-root
+          mountPath: /sys/fs/cgroup
+          readOnly: false
+        - name: log-volume
+          mountPath: /var/log/judge
+        - name: proc-volume
+          mountPath: /proc
+          readOnly: true
+        - name: sys-volume
+          mountPath: /sys
+          readOnly: true
+      
+      # Sidecar containers
+      - name: log-shipper
+        image: fluent/fluent-bit:latest
+        imagePullPolicy: Always
+        
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        
+        volumeMounts:
+        - name: fluent-bit-config
+          mountPath: /fluent-bit/etc
+          readOnly: true
+        - name: log-volume
+          mountPath: /var/log/judge
+          readOnly: true
+        - name: tmp-fluent
+          mountPath: /tmp
+        
+        ports:
+        - name: fluent-http
+          containerPort: 2020
+          protocol: TCP
+      
+      # Image pull secrets
+      imagePullSecrets:
+      - name: container-registry-secret
+      
+      # DNS configuration
+      dnsPolicy: ClusterFirst
+      
+      # Restart policy
+      restartPolicy: Always
+      
+      # Termination grace period
+      terminationGracePeriodSeconds: 60
+      
+      # Volumes
+      volumes:
+      - name: judge-config
+        configMap:
+          name: judge-worker-config
+          defaultMode: 0644
+      
+      - name: fluent-bit-config
+        configMap:
+          name: judge-worker-config
+          items:
+          - key: fluent-bit.conf
+            path: fluent-bit.conf
+          defaultMode: 0644
+      
+      - name: isolate-boxes
+        emptyDir:
+          sizeLimit: "1Gi"
+      
+      - name: tmp-volume
+        emptyDir:
+          sizeLimit: "500Mi"
+          medium: Memory
+      
+      - name: var-tmp-volume
+        emptyDir:
+          sizeLimit: "500Mi"
+          medium: Memory
+      
+      - name: tmp-fluent
+        emptyDir:
+          sizeLimit: "100Mi"
+      
+      - name: log-volume
+        emptyDir:
+          sizeLimit: "1Gi"
+      
+      - name: cgroup-root
+        hostPath:
+          path: /sys/fs/cgroup
+          type: Directory
+      
+      - name: proc-volume
+        hostPath:
+          path: /proc
+          type: Directory
+      
+      - name: sys-volume
+        hostPath:
+          path: /sys
+          type: Directory

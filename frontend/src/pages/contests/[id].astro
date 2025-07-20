@@ -1,0 +1,546 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+import Button from '../../components/Button.astro';
+import Badge from '../../components/Badge.astro';
+import Card from '../../components/Card.astro';
+
+// Get contest ID from URL
+const { id } = Astro.params;
+
+if (!id) {
+  return Astro.redirect('/contests');
+}
+
+// Fetch contest details and problems
+const API_BASE_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
+
+let contest = null;
+let problems = [];
+let standings = [];
+let error = null;
+
+try {
+  // Fetch contest details
+  const contestResponse = await fetch(`${API_BASE_URL}/api/v1/contests/${id}`);
+  if (contestResponse.ok) {
+    contest = await contestResponse.json();
+  } else {
+    error = 'Contest not found';
+  }
+
+  // Fetch contest problems
+  if (contest) {
+    const problemsResponse = await fetch(`${API_BASE_URL}/api/v1/contests/${id}/problems`);
+    if (problemsResponse.ok) {
+      problems = await problemsResponse.json();
+    }
+
+    // Fetch standings if contest has ended or is live
+    if (contest.status === 'live' || contest.status === 'ended') {
+      const standingsResponse = await fetch(`${API_BASE_URL}/api/v1/contests/${id}/standings`);
+      if (standingsResponse.ok) {
+        standings = await standingsResponse.json();
+      }
+    }
+  }
+} catch (e) {
+  error = 'Network error while fetching contest details';
+  console.error('Error fetching contest:', e);
+}
+
+if (error) {
+  return Astro.redirect('/contests?error=' + encodeURIComponent(error));
+}
+
+// Helper functions
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+const formatDuration = (start: string, end: string) => {
+  const startTime = new Date(start);
+  const endTime = new Date(end);
+  const durationMs = endTime.getTime() - startTime.getTime();
+  const hours = Math.floor(durationMs / (1000 * 60 * 60));
+  const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+  
+  if (hours > 0) {
+    return `${hours} hours ${minutes} minutes`;
+  }
+  return `${minutes} minutes`;
+};
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'live':
+      return 'bg-green-100 text-green-800';
+    case 'upcoming':
+      return 'bg-blue-100 text-blue-800';
+    case 'ended':
+      return 'bg-gray-100 text-gray-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
+
+const getStatusLabel = (status: string) => {
+  switch (status) {
+    case 'live':
+      return 'Live Now';
+    case 'upcoming':
+      return 'Upcoming';
+    case 'ended':
+      return 'Ended';
+    default:
+      return status;
+  }
+};
+
+const getDifficultyColor = (difficulty: number) => {
+  if (difficulty <= 1000) return 'bg-green-100 text-green-800';
+  if (difficulty <= 1500) return 'bg-yellow-100 text-yellow-800';
+  if (difficulty <= 2000) return 'bg-orange-100 text-orange-800';
+  return 'bg-red-100 text-red-800';
+};
+
+const getDifficultyLabel = (difficulty: number) => {
+  if (difficulty <= 1000) return 'Easy';
+  if (difficulty <= 1500) return 'Medium';
+  if (difficulty <= 2000) return 'Hard';
+  return 'Expert';
+};
+---
+
+<MainLayout title={contest.title}>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Breadcrumb -->
+    <nav class="flex mb-8" aria-label="Breadcrumb">
+      <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+          <a href="/contests" class="text-gray-700 hover:text-blue-600">
+            Contests
+          </a>
+        </li>
+        <li>
+          <div class="flex items-center">
+            <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+            </svg>
+            <span class="text-gray-500 ml-1 md:ml-2">{contest.title}</span>
+          </div>
+        </li>
+      </ol>
+    </nav>
+
+    <!-- Contest Header -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex-1 mb-4 lg:mb-0">
+          <div class="flex items-center mb-3">
+            <h1 class="text-3xl font-bold text-gray-900 mr-4">{contest.title}</h1>
+            <div class={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(contest.status)}`}>
+              {getStatusLabel(contest.status)}
+            </div>
+          </div>
+          
+          {contest.description && (
+            <p class="text-gray-700 text-lg mb-4">{contest.description}</p>
+          )}
+          
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div class="flex items-center text-gray-600">
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <div class="font-medium">Start Time</div>
+                <div>{formatDate(contest.start_time)}</div>
+              </div>
+            </div>
+            
+            <div class="flex items-center text-gray-600">
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <div class="font-medium">End Time</div>
+                <div>{formatDate(contest.end_time)}</div>
+              </div>
+            </div>
+            
+            <div class="flex items-center text-gray-600">
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <div>
+                <div class="font-medium">Duration</div>
+                <div>{formatDuration(contest.start_time, contest.end_time)}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-3 lg:ml-6">
+          {contest.is_registration_open && (
+            <Button 
+              id="registerBtn"
+              class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 text-sm font-medium"
+              onclick={`registerForContest('${contest.id}')`}
+            >
+              Register Now
+            </Button>
+          )}
+          
+          {contest.status === 'live' && (
+            <Button 
+              href={`/contests/${contest.id}/workspace`}
+              class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 text-sm font-medium"
+            >
+              Enter Contest
+            </Button>
+          )}
+          
+          {contest.status === 'ended' && (
+            <Button 
+              href={`/contests/${contest.id}/standings`}
+              class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 text-sm font-medium"
+            >
+              View Final Standings
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+
+    <!-- Contest Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <Card class="p-6">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <div class="ml-4">
+            <div class="text-2xl font-bold text-gray-900">{contest.problem_count}</div>
+            <div class="text-sm text-gray-600">Problems</div>
+          </div>
+        </div>
+      </Card>
+      
+      <Card class="p-6">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+            </svg>
+          </div>
+          <div class="ml-4">
+            <div class="text-2xl font-bold text-gray-900">{contest.participant_count}</div>
+            <div class="text-sm text-gray-600">Participants</div>
+          </div>
+        </div>
+      </Card>
+      
+      <Card class="p-6">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <svg class="w-8 h-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+            </svg>
+          </div>
+          <div class="ml-4">
+            <div class="text-2xl font-bold text-gray-900">
+              {contest.max_participants ? contest.max_participants : '∞'}
+            </div>
+            <div class="text-sm text-gray-600">Max Participants</div>
+          </div>
+        </div>
+      </Card>
+      
+      <Card class="p-6">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div class="ml-4">
+            <div class="text-2xl font-bold text-gray-900" id="countdown">
+              {contest.status === 'upcoming' ? 'Starts in' : contest.status === 'live' ? 'Ends in' : 'Ended'}
+            </div>
+            <div class="text-sm text-gray-600">Contest Timer</div>
+          </div>
+        </div>
+      </Card>
+    </div>
+
+    <!-- Contest Content -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Main Content -->
+      <div class="lg:col-span-2 space-y-8">
+        <!-- Contest Rules -->
+        {contest.rules && (
+          <Card class="p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Contest Rules</h2>
+            <div class="prose max-w-none">
+              <p class="text-gray-700 whitespace-pre-line">{contest.rules}</p>
+            </div>
+          </Card>
+        )}
+
+        <!-- Problems -->
+        {problems.length > 0 && (
+          <Card class="p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Problems</h2>
+            <div class="space-y-3">
+              {problems.map((problem) => (
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div class="flex items-center space-x-4">
+                    <div class="flex-shrink-0">
+                      <span class="inline-flex items-center justify-center w-8 h-8 bg-blue-600 text-white text-sm font-medium rounded-full">
+                        {String.fromCharCode(65 + problem.problem_order - 1)}
+                      </span>
+                    </div>
+                    <div>
+                      <h3 class="font-medium text-gray-900">{problem.problem_title}</h3>
+                      <div class="flex items-center space-x-2 mt-1">
+                        <span class={`px-2 py-1 text-xs font-medium rounded-full ${getDifficultyColor(problem.problem_difficulty)}`}>
+                          {getDifficultyLabel(problem.problem_difficulty)}
+                        </span>
+                        <span class="text-sm text-gray-500">{problem.points} points</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    {problem.problem_tags && problem.problem_tags.map(tag => (
+                      <Badge variant="secondary" class="text-xs">{tag}</Badge>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        <!-- Standings (if available) -->
+        {standings.length > 0 && (
+          <Card class="p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Leaderboard</h2>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Rank
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Participant
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Score
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Penalty
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  {standings.slice(0, 10).map((standing) => (
+                    <tr>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        #{standing.rank}
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">{standing.username}</div>
+                        <div class="text-sm text-gray-500">{standing.full_name}</div>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {standing.total_points}
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {standing.total_penalty}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            {standings.length > 10 && (
+              <div class="mt-4 text-center">
+                <Button href={`/contests/${contest.id}/standings`} variant="secondary">
+                  View Full Standings
+                </Button>
+              </div>
+            )}
+          </Card>
+        )}
+      </div>
+
+      <!-- Sidebar -->
+      <div class="space-y-6">
+        <!-- Registration Status -->
+        <Card class="p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Registration</h3>
+          
+          {contest.is_registration_open ? (
+            <div class="space-y-3">
+              <div class="flex items-center text-green-600">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                <span class="font-medium">Registration Open</span>
+              </div>
+              
+              {contest.registration_end && (
+                <p class="text-sm text-gray-600">
+                  Registration closes: {formatDate(contest.registration_end)}
+                </p>
+              )}
+              
+              <div class="text-sm text-gray-600">
+                {contest.participant_count} / {contest.max_participants || '∞'} registered
+              </div>
+              
+              {contest.max_participants && (
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    class="bg-blue-600 h-2 rounded-full" 
+                    style={`width: ${Math.min(100, (contest.participant_count / contest.max_participants) * 100)}%`}
+                  ></div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div class="space-y-3">
+              <div class="flex items-center text-gray-500">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                </svg>
+                <span class="font-medium">Registration Closed</span>
+              </div>
+              
+              <p class="text-sm text-gray-600">
+                {contest.participant_count} participants registered
+              </p>
+            </div>
+          )}
+        </Card>
+
+        <!-- Contest Info -->
+        <Card class="p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Contest Info</h3>
+          
+          <div class="space-y-3 text-sm">
+            <div class="flex justify-between">
+              <span class="text-gray-600">Format:</span>
+              <span class="font-medium">ICPC Style</span>
+            </div>
+            
+            <div class="flex justify-between">
+              <span class="text-gray-600">Scoring:</span>
+              <span class="font-medium">Penalty Time</span>
+            </div>
+            
+            <div class="flex justify-between">
+              <span class="text-gray-600">Languages:</span>
+              <span class="font-medium">C++, Java, Python, Go</span>
+            </div>
+            
+            <div class="flex justify-between">
+              <span class="text-gray-600">Created:</span>
+              <span class="font-medium">{formatDate(contest.created_at)}</span>
+            </div>
+          </div>
+        </Card>
+      </div>
+    </div>
+  </div>
+</MainLayout>
+
+<script define:vars={{ contest }}>
+// Registration function
+window.registerForContest = async function(contestId) {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Please login to register for contests');
+      window.location.href = '/auth/login';
+      return;
+    }
+
+    const response = await fetch(`/api/v1/contests/${contestId}/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (response.ok) {
+      alert('Successfully registered for the contest!');
+      window.location.reload();
+    } else {
+      const error = await response.text();
+      alert(`Registration failed: ${error}`);
+    }
+  } catch (error) {
+    console.error('Registration error:', error);
+    alert('Registration failed. Please try again.');
+  }
+};
+
+// Countdown timer
+function updateCountdown() {
+  const now = new Date().getTime();
+  const countdownElement = document.getElementById('countdown');
+  
+  let targetTime;
+  let prefix;
+  
+  if (contest.status === 'upcoming') {
+    targetTime = new Date(contest.start_time).getTime();
+    prefix = 'Starts in ';
+  } else if (contest.status === 'live') {
+    targetTime = new Date(contest.end_time).getTime();
+    prefix = 'Ends in ';
+  } else {
+    return;
+  }
+  
+  const distance = targetTime - now;
+  
+  if (distance < 0) {
+    countdownElement.textContent = contest.status === 'upcoming' ? 'Starting...' : 'Ended';
+    return;
+  }
+  
+  const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+  
+  let timeString = '';
+  if (days > 0) {
+    timeString = `${days}d ${hours}h ${minutes}m`;
+  } else if (hours > 0) {
+    timeString = `${hours}h ${minutes}m ${seconds}s`;
+  } else {
+    timeString = `${minutes}m ${seconds}s`;
+  }
+  
+  countdownElement.textContent = prefix + timeString;
+}
+
+// Update countdown every second
+updateCountdown();
+setInterval(updateCountdown, 1000);
+</script>

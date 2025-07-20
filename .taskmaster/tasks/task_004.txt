@@ -1,0 +1,11 @@
+# Task ID: 4
+# Title: Develop Contest Management Module
+# Status: pending
+# Dependencies: 1, 2
+# Priority: high
+# Description: Develop the backend services and frontend interfaces for creating, managing, and participating in contests, as part of Phase 2.
+# Details:
+Implement the Contest Management service in the GoLang backend. Create REST APIs for contest lifecycle (creation, registration, start, end). Build UI components in Astro for viewing upcoming/live contests and accessing contest-specific problem sets.
+
+# Test Strategy:
+Integration tests for the full contest flow: admin creates contest, user registers, user participates. Unit tests for contest logic including timing, scoring, and access control.

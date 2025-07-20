@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: competitive-programming
+  labels:
+    name: competitive-programming
+    environment: production
+  annotations:
+    kubernetes.io/managed-by: "competitive-programming-platform"
+    description: "Namespace for competitive programming platform components"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: competitive-programming-monitoring
+  labels:
+    name: competitive-programming-monitoring
+    environment: production
+  annotations:
+    kubernetes.io/managed-by: "competitive-programming-platform"
+    description: "Namespace for monitoring and observability components"

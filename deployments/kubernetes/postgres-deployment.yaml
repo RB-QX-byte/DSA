@@ -1,0 +1,216 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: competitive-programming
+  labels:
+    app: postgres
+    component: database
+spec:
+  serviceName: postgres-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+        component: database
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+      
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        imagePullPolicy: Always
+        
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+        
+        env:
+        - name: POSTGRES_DB
+          value: competitive_programming
+        - name: POSTGRES_USER
+          value: judge
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: judge-worker-secrets
+              key: DATABASE_PASSWORD
+        - name: POSTGRES_INITDB_ARGS
+          value: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+            ephemeral-storage: "1Gi"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+            ephemeral-storage: "2Gi"
+        
+        ports:
+        - name: postgres
+          containerPort: 5432
+          protocol: TCP
+        
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - judge
+            - -d
+            - competitive_programming
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - judge
+            - -d
+            - competitive_programming
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+        - name: postgres-config
+          mountPath: /etc/postgresql
+          readOnly: true
+        - name: postgres-init
+          mountPath: /docker-entrypoint-initdb.d
+          readOnly: true
+      
+      volumes:
+      - name: postgres-config
+        configMap:
+          name: postgres-config
+      - name: postgres-init
+        configMap:
+          name: postgres-init-scripts
+  
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-data
+      labels:
+        app: postgres
+        component: database
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: "fast-ssd"
+      resources:
+        requests:
+          storage: 50Gi
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+  namespace: competitive-programming
+  labels:
+    app: postgres
+    component: database
+data:
+  postgresql.conf: |
+    # Connection settings
+    max_connections = 200
+    shared_buffers = 256MB
+    effective_cache_size = 1GB
+    
+    # Write-ahead logging
+    wal_level = replica
+    max_wal_size = 1GB
+    min_wal_size = 80MB
+    checkpoint_completion_target = 0.9
+    
+    # Query tuning
+    random_page_cost = 1.1
+    effective_io_concurrency = 200
+    
+    # Logging
+    log_statement = 'mod'
+    log_min_duration_statement = 1000
+    log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
+    
+    # Performance monitoring
+    shared_preload_libraries = 'pg_stat_statements'
+    track_activity_query_size = 2048
+    pg_stat_statements.track = all
+    
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-scripts
+  namespace: competitive-programming
+  labels:
+    app: postgres
+    component: database
+data:
+  01-schema.sql: |
+    -- Main schema will be loaded from schema.sql
+    \i /docker-entrypoint-initdb.d/schema.sql
+  
+  02-recommendations.sql: |
+    -- Recommendation tables will be loaded from schema_recommendation_tables.sql
+    \i /docker-entrypoint-initdb.d/schema_recommendation_tables.sql
+  
+  03-monitoring.sql: |
+    -- Create monitoring and metrics tables
+    CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+    
+    -- Create performance monitoring views
+    CREATE OR REPLACE VIEW judge_performance_metrics AS
+    SELECT 
+        extract(epoch from now()) as timestamp,
+        (SELECT count(*) FROM submissions WHERE created_at > now() - interval '1 minute') as submissions_per_minute,
+        (SELECT count(*) FROM submissions WHERE status = 'AC' AND created_at > now() - interval '1 minute') as accepted_per_minute,
+        (SELECT avg(execution_time) FROM submissions WHERE created_at > now() - interval '5 minutes') as avg_execution_time,
+        (SELECT count(distinct user_id) FROM submissions WHERE created_at > now() - interval '5 minutes') as active_users;
+        
+    -- Create index for performance
+    CREATE INDEX IF NOT EXISTS idx_submissions_created_at_status ON submissions(created_at, status);
+    CREATE INDEX IF NOT EXISTS idx_submissions_user_time ON submissions(user_id, created_at);
+  
+  04-partitioning.sql: |
+    -- Partition large tables for better performance
+    
+    -- Partition submissions by month
+    CREATE TABLE IF NOT EXISTS submissions_y2024m01 PARTITION OF submissions
+    FOR VALUES FROM ('2024-01-01') TO ('2024-02-01');
+    
+    CREATE TABLE IF NOT EXISTS submissions_y2024m02 PARTITION OF submissions  
+    FOR VALUES FROM ('2024-02-01') TO ('2024-03-01');
+    
+    -- Add more partitions as needed
+    
+    -- Partition user_interactions by month
+    CREATE TABLE IF NOT EXISTS user_interactions_y2024m01 PARTITION OF user_interactions
+    FOR VALUES FROM ('2024-01-01') TO ('2024-02-01');
+    
+    CREATE TABLE IF NOT EXISTS user_interactions_y2024m02 PARTITION OF user_interactions
+    FOR VALUES FROM ('2024-02-01') TO ('2024-03-01');

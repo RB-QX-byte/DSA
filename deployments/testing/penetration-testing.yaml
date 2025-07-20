@@ -1,0 +1,261 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: security-testing
+  labels:
+    purpose: security-testing
+    isolation: true
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: penetration-test-config
+  namespace: security-testing
+  labels:
+    component: security-testing
+data:
+  nmap-scan.sh: |
+    #!/bin/bash
+    set -e
+    
+    echo "Starting network penetration testing..."
+    
+    # Target namespace and services
+    TARGET_NAMESPACE="competitive-programming"
+    SERVICES=("judge-worker-service" "postgres-service" "redis-service")
+    
+    # Get service IPs
+    echo "Discovering service endpoints..."
+    for service in "${SERVICES[@]}"; do
+      SERVICE_IP=$(kubectl get svc $service -n $TARGET_NAMESPACE -o jsonpath='{.spec.clusterIP}')
+      echo "Service: $service, IP: $SERVICE_IP"
+      
+      # Port scanning
+      echo "Scanning ports for $service..."
+      nmap -sS -sV -O -A $SERVICE_IP
+      
+      # Vulnerability scanning
+      echo "Running vulnerability scan on $service..."
+      nmap --script vuln $SERVICE_IP
+      
+      echo "---"
+    done
+  
+  container-escape-test.sh: |
+    #!/bin/bash
+    set -e
+    
+    echo "Testing container escape vulnerabilities..."
+    
+    # Test 1: Privileged escalation attempts
+    echo "Testing privilege escalation..."
+    
+    # Try to access host filesystem
+    if [ -d "/host" ]; then
+      echo "WARNING: Host filesystem accessible at /host"
+      ls -la /host/ || echo "Access denied - GOOD"
+    fi
+    
+    # Try to access Docker socket
+    if [ -S "/var/run/docker.sock" ]; then
+      echo "WARNING: Docker socket accessible"
+      docker ps 2>/dev/null || echo "Docker access denied - GOOD"
+    fi
+    
+    # Test 2: Capabilities testing
+    echo "Testing container capabilities..."
+    capsh --print
+    
+    # Test 3: Seccomp profile testing
+    echo "Testing seccomp restrictions..."
+    
+    # Try restricted syscalls
+    echo "Testing clone syscall restriction..."
+    (timeout 5 unshare --user --map-root-user whoami) || echo "clone restricted - GOOD"
+    
+    echo "Testing mount syscall restriction..."
+    (timeout 5 mount -t tmpfs tmpfs /tmp/test 2>/dev/null) || echo "mount restricted - GOOD"
+    
+    # Test 4: Network isolation
+    echo "Testing network isolation..."
+    
+    # Try to access external networks
+    timeout 5 ping -c 1 8.8.8.8 || echo "External network access restricted - GOOD"
+    
+    # Try to access cluster metadata
+    timeout 5 curl -s http://169.254.169.254/latest/meta-data/ || echo "Metadata access restricted - GOOD"
+  
+  resource-exhaustion-test.sh: |
+    #!/bin/bash
+    set -e
+    
+    echo "Testing resource exhaustion protections..."
+    
+    # Test CPU limits
+    echo "Testing CPU limits..."
+    timeout 30 yes > /dev/null &
+    CPU_PID=$!
+    sleep 10
+    kill $CPU_PID 2>/dev/null || true
+    
+    # Test memory limits
+    echo "Testing memory limits..."
+    python3 -c "
+    import time
+    try:
+        data = []
+        for i in range(1000):
+            data.append(' ' * 1024 * 1024)  # 1MB chunks
+            time.sleep(0.1)
+    except MemoryError:
+        print('Memory limit enforced - GOOD')
+    except Exception as e:
+        print(f'Memory allocation stopped: {e}')
+    "
+    
+    # Test disk usage limits
+    echo "Testing disk usage limits..."
+    timeout 30 dd if=/dev/zero of=/tmp/testfile bs=1M count=100 2>/dev/null || echo "Disk limit enforced - GOOD"
+    rm -f /tmp/testfile
+    
+    # Test file descriptor limits
+    echo "Testing file descriptor limits..."
+    python3 -c "
+    import os
+    try:
+        fds = []
+        for i in range(10000):
+            fds.append(os.open('/dev/null', os.O_RDONLY))
+    except OSError as e:
+        print(f'File descriptor limit enforced: {e}')
+    finally:
+        for fd in fds:
+            try:
+                os.close(fd)
+            except:
+                pass
+    "
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: penetration-test-runner
+  namespace: security-testing
+  labels:
+    component: security-testing
+    test-type: penetration
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        component: security-testing
+        test-type: penetration
+    spec:
+      restartPolicy: Never
+      
+      securityContext:
+        runAsNonRoot: false  # Need root for some security tests
+        runAsUser: 0
+        fsGroup: 0
+      
+      serviceAccountName: security-test-runner
+      
+      containers:
+      - name: penetration-tester
+        image: kalilinux/kali-rolling:latest
+        imagePullPolicy: Always
+        
+        command: ["/bin/bash"]
+        args:
+        - -c
+        - |
+          set -e
+          
+          # Install required tools
+          apt-get update
+          apt-get install -y nmap nikto sqlmap dirb gobuster curl wget python3 python3-pip
+          pip3 install requests
+          
+          # Run penetration tests
+          echo "Starting comprehensive penetration testing..."
+          
+          # Network scanning
+          /scripts/nmap-scan.sh
+          
+          # Container security testing
+          /scripts/container-escape-test.sh
+          
+          # Resource exhaustion testing
+          /scripts/resource-exhaustion-test.sh
+          
+          echo "Penetration testing completed"
+        
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 2000m
+            memory: 4Gi
+        
+        volumeMounts:
+        - name: test-scripts
+          mountPath: /scripts
+          readOnly: true
+        - name: results
+          mountPath: /results
+      
+      volumes:
+      - name: test-scripts
+        configMap:
+          name: penetration-test-config
+          defaultMode: 0755
+      - name: results
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: security-test-runner
+  namespace: security-testing
+  labels:
+    component: security-testing
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: security-test-runner
+  labels:
+    component: security-testing
+rules:
+- apiGroups: [""]
+  resources: ["services", "pods", "endpoints", "namespaces"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "statefulsets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["networkpolicies"]
+  verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: security-test-runner
+  labels:
+    component: security-testing
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: security-test-runner
+subjects:
+- kind: ServiceAccount
+  name: security-test-runner
+  namespace: security-testing

@@ -1,0 +1,11 @@
+# Task ID: 5
+# Title: Implement Real-time Leaderboards and Submission Tracking
+# Status: pending
+# Dependencies: 3, 4
+# Priority: high
+# Description: Integrate real-time features for live contest leaderboards and submission status updates using SSE or Supabase subscriptions.
+# Details:
+Utilize Supabase's real-time subscriptions or Server-Sent Events (SSE) to push live data to the frontend. Create an interactive leaderboard component in Astro that updates without page reloads. Display live submission verdicts (e.g., Compiling, Running, Accepted).
+
+# Test Strategy:
+End-to-end tests to verify real-time updates on the UI. Load testing to ensure the real-time infrastructure can handle 20,000+ concurrent users during a contest.

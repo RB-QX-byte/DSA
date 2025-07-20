@@ -1,0 +1,11 @@
+# Task ID: 3
+# Title: Implement Basic Code Execution Judge System
+# Status: pending
+# Dependencies: 1
+# Priority: high
+# Description: Implement the initial version of the secure code execution judge system to process submissions.
+# Details:
+Set up a distributed worker pool using Asynq (Redis-based queue). Implement the primary sandboxing layer with 'Isolate' for resource control. The system should support a limited set of languages and execute code against predefined test cases, returning a verdict.
+
+# Test Strategy:
+Unit tests for the judge's logic (compilation, execution, comparison). Integration tests for the submission pipeline from API to judge worker and back. Security testing against simple malicious code attempts.

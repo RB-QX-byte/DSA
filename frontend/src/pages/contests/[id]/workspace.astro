@@ -1,0 +1,473 @@
+---
+import MainLayout from '../../../layouts/MainLayout.astro';
+import Card from '../../../components/Card.astro';
+import Button from '../../../components/Button.astro';
+import Badge from '../../../components/Badge.astro';
+import SubmissionStatus from '../../../components/SubmissionStatus.astro';
+import RealtimeLeaderboard from '../../../components/RealtimeLeaderboard.astro';
+
+// Get contest ID from URL
+const { id } = Astro.params;
+
+if (!id) {
+  return Astro.redirect('/contests');
+}
+
+// Fetch contest details and problems
+const API_BASE_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
+
+let contest = null;
+let problems = [];
+let standings = [];
+let error = null;
+let accessDenied = false;
+
+try {
+  // Fetch contest details
+  const contestResponse = await fetch(`${API_BASE_URL}/api/v1/contests/${id}`);
+  if (contestResponse.ok) {
+    contest = await contestResponse.json();
+    
+    // Check if contest is live
+    if (contest.status !== 'live') {
+      accessDenied = true;
+      error = 'Contest is not currently live';
+    }
+  } else {
+    error = 'Contest not found';
+  }
+
+  // Fetch contest problems (requires authentication check)
+  if (contest && !accessDenied) {
+    const problemsResponse = await fetch(`${API_BASE_URL}/api/v1/contests/${id}/problems`);
+    if (problemsResponse.ok) {
+      problems = await problemsResponse.json();
+    } else if (problemsResponse.status === 403) {
+      accessDenied = true;
+      error = 'Access denied. Please register for the contest first.';
+    }
+
+    // Fetch current standings
+    const standingsResponse = await fetch(`${API_BASE_URL}/api/v1/contests/${id}/standings`);
+    if (standingsResponse.ok) {
+      standings = await standingsResponse.json();
+    }
+  }
+} catch (e) {
+  error = 'Network error while fetching contest details';
+  console.error('Error fetching contest workspace:', e);
+}
+
+if (error && !accessDenied) {
+  return Astro.redirect('/contests?error=' + encodeURIComponent(error));
+}
+
+// Helper functions
+const formatTimeRemaining = (endTime: string) => {
+  const now = new Date();
+  const end = new Date(endTime);
+  const diff = end.getTime() - now.getTime();
+  
+  if (diff <= 0) return 'Contest Ended';
+  
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+  
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+};
+
+const getDifficultyColor = (difficulty: number) => {
+  if (difficulty <= 1000) return 'bg-green-100 text-green-800';
+  if (difficulty <= 1500) return 'bg-yellow-100 text-yellow-800';
+  if (difficulty <= 2000) return 'bg-orange-100 text-orange-800';
+  return 'bg-red-100 text-red-800';
+};
+
+const getDifficultyLabel = (difficulty: number) => {
+  if (difficulty <= 1000) return 'Easy';
+  if (difficulty <= 1500) return 'Medium';
+  if (difficulty <= 2000) return 'Hard';
+  return 'Expert';
+};
+---
+
+<MainLayout title={`${contest?.title} - Workspace`}>
+  {accessDenied ? (
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <div class="text-center">
+        <svg class="w-16 h-16 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L5.732 15.5c-.77.833.192 2.5 1.732 2.5z" />
+        </svg>
+        <h2 class="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
+        <p class="text-gray-600 mb-6">{error}</p>
+        <div class="space-x-4">
+          <Button href={`/contests/${id}`} variant="primary">
+            View Contest Details
+          </Button>
+          <Button href="/contests" variant="secondary">
+            Back to Contests
+          </Button>
+        </div>
+      </div>
+    </div>
+  ) : (
+    <div class="h-screen flex flex-col">
+      <!-- Contest Header -->
+      <div class="bg-white border-b border-gray-200 px-6 py-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-4">
+            <h1 class="text-xl font-semibold text-gray-900">{contest.title}</h1>
+            <Badge variant="primary" class="text-xs">Live Contest</Badge>
+          </div>
+          
+          <div class="flex items-center space-x-6">
+            <!-- Timer -->
+            <div class="flex items-center space-x-2">
+              <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span class="text-lg font-mono font-bold text-red-600" id="contestTimer">
+                {formatTimeRemaining(contest.end_time)}
+              </span>
+            </div>
+            
+            <!-- Navigation -->
+            <div class="flex items-center space-x-4">
+              <Button href={`/contests/${id}`} variant="secondary" size="sm">
+                Contest Details
+              </Button>
+              <Button href={`/contests/${id}/standings`} variant="secondary" size="sm">
+                Standings
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="flex-1 flex overflow-hidden">
+        <!-- Problems Sidebar -->
+        <div class="w-80 bg-gray-50 border-r border-gray-200 overflow-y-auto">
+          <div class="p-4">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Problems</h2>
+            
+            <div class="space-y-2">
+              {problems.map((problem, index) => (
+                <div 
+                  class="problem-item p-3 bg-white rounded-lg shadow-sm border border-gray-200 cursor-pointer hover:bg-blue-50 transition-colors"
+                  data-problem-id={problem.problem_id}
+                  data-problem-order={problem.problem_order}
+                  onclick={`loadProblem('${problem.problem_id}', ${problem.problem_order})`}
+                >
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                      <div class="flex-shrink-0">
+                        <span class="inline-flex items-center justify-center w-8 h-8 bg-blue-600 text-white text-sm font-medium rounded-full">
+                          {String.fromCharCode(65 + problem.problem_order - 1)}
+                        </span>
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <h3 class="text-sm font-medium text-gray-900 truncate">
+                          {problem.problem_title}
+                        </h3>
+                        <div class="flex items-center space-x-2 mt-1">
+                          <span class={`px-2 py-1 text-xs font-medium rounded-full ${getDifficultyColor(problem.problem_difficulty)}`}>
+                            {getDifficultyLabel(problem.problem_difficulty)}
+                          </span>
+                          <span class="text-xs text-gray-500">{problem.points} pts</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- Status indicator -->
+                    <div class="flex-shrink-0">
+                      <div class="w-3 h-3 bg-gray-300 rounded-full" id={`status-${problem.problem_id}`}></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <!-- Problem Content -->
+        <div class="flex-1 flex flex-col">
+          <!-- Problem Statement -->
+          <div class="flex-1 overflow-y-auto p-6">
+            <div id="problemContent" class="prose max-w-none">
+              <div class="text-center text-gray-500 mt-16">
+                <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Select a Problem</h3>
+                <p class="text-gray-600">Choose a problem from the sidebar to view its statement and start solving.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Problem Actions -->
+          <div class="border-t border-gray-200 p-4 bg-white">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-4">
+                <span class="text-sm text-gray-600">
+                  Language:
+                </span>
+                <select 
+                  id="languageSelect" 
+                  class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="cpp">C++</option>
+                  <option value="java">Java</option>
+                  <option value="python">Python</option>
+                  <option value="go">Go</option>
+                </select>
+              </div>
+              
+              <div class="flex items-center space-x-3">
+                <Button 
+                  id="submitBtn" 
+                  class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 disabled:bg-gray-300"
+                  disabled
+                  onclick="submitSolution()"
+                >
+                  Submit Solution
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Sidebar -->
+        <div class="w-80 bg-white border-l border-gray-200 overflow-y-auto">
+          <div class="p-4 space-y-6">
+            <!-- Real-time Submission Status -->
+            <div>
+              <h2 class="text-lg font-semibold text-gray-900 mb-4">My Submissions</h2>
+              <SubmissionStatus contestId={id} class="max-h-64 overflow-y-auto" />
+            </div>
+            
+            <!-- Real-time Leaderboard -->
+            <div>
+              <RealtimeLeaderboard 
+                contestId={id} 
+                initialLeaderboard={standings} 
+                maxEntries={15}
+                class="max-h-80"
+              />
+              
+              <div class="mt-4 text-center">
+                <Button href={`/contests/${id}/standings`} variant="secondary" size="sm">
+                  View Full Standings
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )}
+</MainLayout>
+
+<script define:vars={{ contest, problems, API_BASE_URL }}>
+let currentProblem = null;
+let submissionCode = '';
+
+// Timer update function
+function updateTimer() {
+  const timerElement = document.getElementById('contestTimer');
+  if (!timerElement) return;
+  
+  const now = new Date();
+  const end = new Date(contest.end_time);
+  const diff = end.getTime() - now.getTime();
+  
+  if (diff <= 0) {
+    timerElement.textContent = 'Contest Ended';
+    timerElement.classList.add('text-red-800');
+    return;
+  }
+  
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+  
+  timerElement.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  
+  // Change color when less than 30 minutes remaining
+  if (diff < 30 * 60 * 1000) {
+    timerElement.classList.add('text-red-600');
+  } else if (diff < 60 * 60 * 1000) {
+    timerElement.classList.add('text-yellow-600');
+  }
+}
+
+// Load problem content
+window.loadProblem = async function(problemId, problemOrder) {
+  currentProblem = problems.find(p => p.problem_id === problemId);
+  
+  // Update UI
+  document.querySelectorAll('.problem-item').forEach(item => {
+    item.classList.remove('bg-blue-50', 'border-blue-300');
+  });
+  
+  document.querySelector(`[data-problem-id="${problemId}"]`).classList.add('bg-blue-50', 'border-blue-300');
+  
+  // Load problem statement
+  const contentDiv = document.getElementById('problemContent');
+  contentDiv.innerHTML = `
+    <div class="mb-6">
+      <h1 class="text-2xl font-bold text-gray-900 mb-2">
+        Problem ${String.fromCharCode(65 + problemOrder - 1)}: ${currentProblem.problem_title}
+      </h1>
+      <div class="flex items-center space-x-4 mb-4">
+        <span class="px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800">
+          ${currentProblem.points} points
+        </span>
+        <span class="text-sm text-gray-600">
+          Time Limit: 1s | Memory Limit: 256MB
+        </span>
+      </div>
+    </div>
+    
+    <div class="prose max-w-none">
+      <div class="bg-gray-50 p-4 rounded-lg mb-6">
+        <h3 class="text-lg font-semibold mb-2">Problem Statement</h3>
+        <p class="text-gray-700">${currentProblem.problem_description}</p>
+      </div>
+      
+      <div class="bg-blue-50 p-4 rounded-lg mb-6">
+        <h3 class="text-lg font-semibold mb-2">Sample Input</h3>
+        <pre class="bg-white p-3 rounded border text-sm"><code>5
+1 2 3 4 5</code></pre>
+      </div>
+      
+      <div class="bg-green-50 p-4 rounded-lg mb-6">
+        <h3 class="text-lg font-semibold mb-2">Sample Output</h3>
+        <pre class="bg-white p-3 rounded border text-sm"><code>15</code></pre>
+      </div>
+      
+      <div class="bg-yellow-50 p-4 rounded-lg">
+        <h3 class="text-lg font-semibold mb-2">Code Editor</h3>
+        <textarea 
+          id="codeEditor" 
+          class="w-full h-64 p-4 border rounded-lg font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Write your solution here..."
+          oninput="updateSubmissionCode(this.value)"
+        ></textarea>
+      </div>
+    </div>
+  `;
+  
+  // Enable submit button
+  document.getElementById('submitBtn').disabled = false;
+};
+
+// Update submission code
+window.updateSubmissionCode = function(code) {
+  submissionCode = code;
+};
+
+// Submit solution
+window.submitSolution = async function() {
+  if (!currentProblem || !submissionCode.trim()) {
+    alert('Please select a problem and write your solution');
+    return;
+  }
+  
+  const language = document.getElementById('languageSelect').value;
+  const submitBtn = document.getElementById('submitBtn');
+  
+  try {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+    
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/api/v1/problems/${currentProblem.problem_id}/submit`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        source_code: submissionCode,
+        language: language
+      })
+    });
+    
+    if (response.ok) {
+      alert('Solution submitted successfully!');
+      // Update problem status
+      document.getElementById(`status-${currentProblem.problem_id}`).classList.add('bg-yellow-400');
+      
+      // Clear code editor
+      document.getElementById('codeEditor').value = '';
+      submissionCode = '';
+    } else {
+      const error = await response.text();
+      alert(`Submission failed: ${error}`);
+    }
+  } catch (error) {
+    console.error('Submission error:', error);
+    alert('Submission failed. Please try again.');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Submit Solution';
+  }
+};
+
+// Start timer
+updateTimer();
+setInterval(updateTimer, 1000);
+
+// Auto-refresh standings every 30 seconds
+setInterval(async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/v1/contests/${contest.id}/standings`);
+    if (response.ok) {
+      const newStandings = await response.json();
+      // Update standings display (simplified)
+      console.log('Standings updated:', newStandings);
+    }
+  } catch (error) {
+    console.error('Error refreshing standings:', error);
+  }
+}, 30000);
+</script>
+
+<style>
+.problem-item.active {
+  @apply bg-blue-50 border-blue-300;
+}
+
+.prose pre {
+  @apply bg-gray-100 p-3 rounded-lg overflow-x-auto;
+}
+
+.prose code {
+  @apply bg-gray-100 px-2 py-1 rounded text-sm;
+}
+
+#codeEditor {
+  resize: vertical;
+  min-height: 256px;
+}
+
+/* Hide scrollbar for Webkit browsers */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+</style>

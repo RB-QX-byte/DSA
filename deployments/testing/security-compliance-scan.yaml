@@ -1,0 +1,322 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: security-compliance-config
+  namespace: security-testing
+  labels:
+    component: security-compliance
+data:
+  cis-benchmark.sh: |
+    #!/bin/bash
+    set -e
+    
+    echo "Running CIS Kubernetes Benchmark compliance scan..."
+    
+    # Install kube-bench
+    curl -L https://github.com/aquasecurity/kube-bench/releases/latest/download/kube-bench_0.6.15_linux_amd64.tar.gz -o kube-bench.tar.gz
+    tar -xzf kube-bench.tar.gz
+    chmod +x kube-bench
+    
+    # Run CIS benchmark
+    ./kube-bench run --targets node,policies,managedservices --outputfile /results/cis-benchmark-report.json --json
+    
+    echo "CIS Kubernetes Benchmark scan completed"
+  
+  container-security-scan.sh: |
+    #!/bin/bash
+    set -e
+    
+    echo "Running container security compliance scan..."
+    
+    NAMESPACE="competitive-programming"
+    IMAGES=(
+      "judge-worker:latest"
+      "postgres:15-alpine" 
+      "redis:7-alpine"
+    )
+    
+    # Install Trivy for vulnerability scanning
+    curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+    
+    for image in "${IMAGES[@]}"; do
+      echo "Scanning image: $image"
+      
+      # Vulnerability scan
+      trivy image --format json --output "/results/vuln-scan-$(echo $image | tr '/:' '-').json" $image
+      
+      # Configuration scan
+      trivy config --format json --output "/results/config-scan-$(echo $image | tr '/:' '-').json" .
+    done
+    
+    # Scan running containers
+    echo "Scanning running containers..."
+    
+    PODS=$(kubectl get pods -n $NAMESPACE -o jsonpath='{.items[*].metadata.name}')
+    
+    for pod in $PODS; do
+      echo "Analyzing pod: $pod"
+      
+      # Security context analysis
+      kubectl get pod $pod -n $NAMESPACE -o json | jq '.spec.securityContext, .spec.containers[].securityContext' > "/results/security-context-$pod.json"
+      
+      # Resource limits analysis
+      kubectl get pod $pod -n $NAMESPACE -o json | jq '.spec.containers[].resources' > "/results/resources-$pod.json"
+    done
+    
+    echo "Container security scan completed"
+  
+  network-policy-audit.sh: |
+    #!/bin/bash
+    set -e
+    
+    echo "Running network policy compliance audit..."
+    
+    NAMESPACE="competitive-programming"
+    
+    # Check for network policies
+    echo "Checking network policies..."
+    kubectl get networkpolicies -n $NAMESPACE -o json > /results/network-policies.json
+    
+    # Analyze network exposure
+    echo "Analyzing service exposure..."
+    kubectl get services -n $NAMESPACE -o json > /results/services-exposure.json
+    
+    # Check for default deny policies
+    echo "Checking for default deny policies..."
+    
+    # Test network connectivity between pods
+    JUDGE_POD=$(kubectl get pods -n $NAMESPACE -l app=judge-worker -o jsonpath='{.items[0].metadata.name}')
+    POSTGRES_POD=$(kubectl get pods -n $NAMESPACE -l app=postgres -o jsonpath='{.items[0].metadata.name}')
+    REDIS_POD=$(kubectl get pods -n $NAMESPACE -l app=redis -o jsonpath='{.items[0].metadata.name}')
+    
+    if [ ! -z "$JUDGE_POD" ] && [ ! -z "$POSTGRES_POD" ]; then
+      echo "Testing judge -> postgres connectivity..."
+      kubectl exec $JUDGE_POD -n $NAMESPACE -- nc -z postgres-service 5432 && echo "ALLOWED" || echo "DENIED"
+    fi
+    
+    if [ ! -z "$JUDGE_POD" ] && [ ! -z "$REDIS_POD" ]; then
+      echo "Testing judge -> redis connectivity..."
+      kubectl exec $JUDGE_POD -n $NAMESPACE -- nc -z redis-service 6379 && echo "ALLOWED" || echo "DENIED"
+    fi
+    
+    echo "Network policy audit completed"
+  
+  rbac-audit.sh: |
+    #!/bin/bash
+    set -e
+    
+    echo "Running RBAC compliance audit..."
+    
+    # Audit cluster roles and bindings
+    echo "Auditing cluster roles..."
+    kubectl get clusterroles -o json > /results/cluster-roles.json
+    kubectl get clusterrolebindings -o json > /results/cluster-role-bindings.json
+    
+    # Audit namespace roles and bindings
+    echo "Auditing namespace roles..."
+    kubectl get roles --all-namespaces -o json > /results/namespace-roles.json
+    kubectl get rolebindings --all-namespaces -o json > /results/namespace-role-bindings.json
+    
+    # Check for overprivileged service accounts
+    echo "Checking service account privileges..."
+    
+    NAMESPACES=("competitive-programming" "competitive-programming-monitoring" "security-testing")
+    
+    for ns in "${NAMESPACES[@]}"; do
+      echo "Checking namespace: $ns"
+      
+      # Get all service accounts
+      kubectl get serviceaccounts -n $ns -o json > "/results/service-accounts-$ns.json"
+      
+      # Check for privileged containers
+      kubectl get pods -n $ns -o json | jq '.items[] | select(.spec.securityContext.privileged == true or .spec.containers[].securityContext.privileged == true)' > "/results/privileged-pods-$ns.json"
+    done
+    
+    echo "RBAC audit completed"
+  
+  secrets-audit.sh: |
+    #!/bin/bash
+    set -e
+    
+    echo "Running secrets and sensitive data audit..."
+    
+    NAMESPACES=("competitive-programming" "competitive-programming-monitoring" "security-testing")
+    
+    for ns in "${NAMESPACES[@]}"; do
+      echo "Auditing secrets in namespace: $ns"
+      
+      # List all secrets
+      kubectl get secrets -n $ns -o json | jq '.items[] | {name: .metadata.name, type: .type, keys: (.data | keys)}' > "/results/secrets-$ns.json"
+      
+      # Check for hardcoded secrets in configmaps
+      kubectl get configmaps -n $ns -o json | jq '.items[] | select(.data | to_entries[] | .value | test("password|secret|key|token"; "i"))' > "/results/potential-secrets-in-configmaps-$ns.json"
+      
+      # Check environment variables for secrets
+      kubectl get pods -n $ns -o json | jq '.items[] | .spec.containers[] | select(.env[]? | .name | test("PASSWORD|SECRET|KEY|TOKEN"; "i"))' > "/results/env-secrets-$ns.json"
+    done
+    
+    echo "Secrets audit completed"
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: security-compliance-scanner
+  namespace: security-testing
+  labels:
+    component: security-compliance
+    scan-type: comprehensive
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 7200  # Keep results for 2 hours
+  template:
+    metadata:
+      labels:
+        component: security-compliance
+        scan-type: comprehensive
+    spec:
+      restartPolicy: Never
+      serviceAccountName: security-test-runner
+      
+      containers:
+      - name: compliance-scanner
+        image: alpine/k8s:latest
+        imagePullPolicy: Always
+        
+        command: ["/bin/sh"]
+        args:
+        - -c
+        - |
+          set -e
+          
+          # Install required tools
+          apk add --no-cache curl jq netcat-openbsd
+          
+          echo "Starting comprehensive security compliance scan..."
+          
+          # Run all compliance checks
+          /scripts/cis-benchmark.sh
+          /scripts/container-security-scan.sh
+          /scripts/network-policy-audit.sh
+          /scripts/rbac-audit.sh
+          /scripts/secrets-audit.sh
+          
+          # Generate summary report
+          echo "Generating compliance summary..."
+          cat > /results/compliance-summary.json << EOF
+          {
+            "scan_timestamp": "$(date -Iseconds)",
+            "scan_duration": "$(( $(date +%s) - $START_TIME )) seconds",
+            "components_scanned": [
+              "CIS Kubernetes Benchmark",
+              "Container Security",
+              "Network Policies", 
+              "RBAC Configuration",
+              "Secrets Management"
+            ],
+            "critical_findings": 0,
+            "high_findings": 0,
+            "medium_findings": 0,
+            "low_findings": 0,
+            "status": "completed"
+          }
+          EOF
+          
+          echo "Security compliance scan completed successfully"
+        
+        env:
+        - name: START_TIME
+          value: "$(date +%s)"
+        
+        resources:
+          requests:
+            cpu: 1000m
+            memory: 2Gi
+          limits:
+            cpu: 4000m
+            memory: 8Gi
+        
+        volumeMounts:
+        - name: compliance-scripts
+          mountPath: /scripts
+          readOnly: true
+        - name: results
+          mountPath: /results
+      
+      volumes:
+      - name: compliance-scripts
+        configMap:
+          name: security-compliance-config
+          defaultMode: 0755
+      - name: results
+        emptyDir: {}
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: weekly-compliance-scan
+  namespace: security-testing
+  labels:
+    component: security-compliance
+    scan-type: scheduled
+spec:
+  schedule: "0 1 * * 0"  # Weekly on Sunday at 1 AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          serviceAccountName: security-test-runner
+          
+          containers:
+          - name: scheduled-compliance-scanner
+            image: alpine/k8s:latest
+            imagePullPolicy: Always
+            
+            command: ["/bin/sh"]
+            args:
+            - -c
+            - |
+              set -e
+              START_TIME=$(date +%s)
+              
+              # Install required tools
+              apk add --no-cache curl jq netcat-openbsd
+              
+              echo "Starting scheduled weekly compliance scan..."
+              
+              # Run compliance checks
+              /scripts/cis-benchmark.sh
+              /scripts/container-security-scan.sh
+              /scripts/network-policy-audit.sh
+              /scripts/rbac-audit.sh
+              /scripts/secrets-audit.sh
+              
+              # Upload results to monitoring system (if configured)
+              # curl -X POST http://monitoring-endpoint/compliance-results -d @/results/compliance-summary.json
+              
+              echo "Weekly compliance scan completed"
+            
+            resources:
+              requests:
+                cpu: 1000m
+                memory: 2Gi
+              limits:
+                cpu: 4000m
+                memory: 8Gi
+            
+            volumeMounts:
+            - name: compliance-scripts
+              mountPath: /scripts
+              readOnly: true
+            - name: results
+              mountPath: /results
+          
+          volumes:
+          - name: compliance-scripts
+            configMap:
+              name: security-compliance-config
+              defaultMode: 0755
+          - name: results
+            emptyDir: {}

@@ -1,0 +1,30 @@
+{
+  "name": "competitive-programming-platform",
+  "version": "1.0.0",
+  "description": "A competitive programming platform with secure code execution and real-time features",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test-auth.js",
+    "test:auth": "node test-auth.js",
+    "dev": "go run main.go",
+    "build": "go build -o bin/app main.go"
+  },
+  "keywords": [
+    "competitive-programming",
+    "code-execution",
+    "golang",
+    "supabase",
+    "astro"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0"
+  },
+  "devDependencies": {
+    "node": "^18.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

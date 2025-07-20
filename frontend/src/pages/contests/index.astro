@@ -1,0 +1,238 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+import ContestCard from '../../components/ContestCard.astro';
+import Button from '../../components/Button.astro';
+import Badge from '../../components/Badge.astro';
+
+// Fetch contests from the API
+const API_BASE_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:8080';
+
+// Get query parameters
+const url = new URL(Astro.request.url);
+const status = url.searchParams.get('status') || 'all';
+const page = parseInt(url.searchParams.get('page') || '1');
+const search = url.searchParams.get('search') || '';
+
+let contests = [];
+let error = null;
+
+try {
+  const params = new URLSearchParams();
+  if (status !== 'all') {
+    params.append('status', status);
+  }
+  if (search) {
+    params.append('search', search);
+  }
+  params.append('page', page.toString());
+  params.append('limit', '12');
+
+  const response = await fetch(`${API_BASE_URL}/api/v1/contests?${params}`);
+  if (response.ok) {
+    contests = await response.json();
+  } else {
+    error = 'Failed to fetch contests';
+  }
+} catch (e) {
+  error = 'Network error while fetching contests';
+  console.error('Error fetching contests:', e);
+}
+
+// Filter contests by status for display
+const upcomingContests = contests.filter(c => c.status === 'upcoming');
+const liveContests = contests.filter(c => c.status === 'live');
+const endedContests = contests.filter(c => c.status === 'ended');
+
+const contestCounts = {
+  all: contests.length,
+  upcoming: upcomingContests.length,
+  live: liveContests.length,
+  ended: endedContests.length
+};
+
+const getDisplayContests = () => {
+  switch (status) {
+    case 'upcoming':
+      return upcomingContests;
+    case 'live':
+      return liveContests;
+    case 'ended':
+      return endedContests;
+    default:
+      return contests;
+  }
+};
+
+const displayContests = getDisplayContests();
+---
+
+<MainLayout title="Contests">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900 mb-4">Contests</h1>
+      <p class="text-gray-600 mb-6">
+        Participate in competitive programming contests and challenge yourself against other programmers.
+      </p>
+      
+      <!-- Search and Create Contest -->
+      <div class="flex flex-col sm:flex-row gap-4 mb-6">
+        <div class="flex-1">
+          <form method="GET" class="flex">
+            <input
+              type="text"
+              name="search"
+              placeholder="Search contests..."
+              value={search}
+              class="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <input type="hidden" name="status" value={status} />
+            <Button type="submit" class="rounded-l-none">Search</Button>
+          </form>
+        </div>
+        
+        <Button 
+          href="/contests/create"
+          class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+        >
+          Create Contest
+        </Button>
+      </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="mb-8">
+      <nav class="flex space-x-8 border-b border-gray-200">
+        <a 
+          href={`/contests?search=${search}`}
+          class={`py-2 px-1 border-b-2 font-medium text-sm ${
+            status === 'all' 
+              ? 'border-blue-500 text-blue-600' 
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          }`}
+        >
+          All Contests
+          <Badge variant="secondary" class="ml-2">{contestCounts.all}</Badge>
+        </a>
+        
+        <a 
+          href={`/contests?status=live&search=${search}`}
+          class={`py-2 px-1 border-b-2 font-medium text-sm ${
+            status === 'live' 
+              ? 'border-blue-500 text-blue-600' 
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          }`}
+        >
+          Live
+          <Badge variant="primary" class="ml-2">{contestCounts.live}</Badge>
+        </a>
+        
+        <a 
+          href={`/contests?status=upcoming&search=${search}`}
+          class={`py-2 px-1 border-b-2 font-medium text-sm ${
+            status === 'upcoming' 
+              ? 'border-blue-500 text-blue-600' 
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          }`}
+        >
+          Upcoming
+          <Badge variant="secondary" class="ml-2">{contestCounts.upcoming}</Badge>
+        </a>
+        
+        <a 
+          href={`/contests?status=ended&search=${search}`}
+          class={`py-2 px-1 border-b-2 font-medium text-sm ${
+            status === 'ended' 
+              ? 'border-blue-500 text-blue-600' 
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          }`}
+        >
+          Ended
+          <Badge variant="secondary" class="ml-2">{contestCounts.ended}</Badge>
+        </a>
+      </nav>
+    </div>
+
+    <!-- Error State -->
+    {error && (
+      <div class="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+        <div class="flex">
+          <svg class="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-red-800">Error</h3>
+            <p class="text-sm text-red-700 mt-1">{error}</p>
+          </div>
+        </div>
+      </div>
+    )}
+
+    <!-- Contest Grid -->
+    {displayContests.length === 0 && !error ? (
+      <div class="text-center py-12">
+        <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No contests found</h3>
+        <p class="text-gray-600 mb-4">
+          {search ? `No contests match your search "${search}"` : 'There are no contests available right now.'}
+        </p>
+        {search && (
+          <Button href="/contests" variant="secondary">
+            View All Contests
+          </Button>
+        )}
+      </div>
+    ) : (
+      <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {displayContests.map(contest => (
+          <ContestCard contest={contest} />
+        ))}
+      </div>
+    )}
+
+    <!-- Pagination -->
+    {displayContests.length > 0 && (
+      <div class="mt-8 flex justify-center">
+        <nav class="flex items-center space-x-2">
+          {page > 1 && (
+            <a 
+              href={`/contests?page=${page - 1}&status=${status}&search=${search}`}
+              class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Previous
+            </a>
+          )}
+          
+          <span class="px-3 py-2 text-sm font-medium text-gray-700 bg-blue-50 border border-blue-300 rounded-md">
+            Page {page}
+          </span>
+          
+          {displayContests.length === 12 && (
+            <a 
+              href={`/contests?page=${page + 1}&status=${status}&search=${search}`}
+              class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Next
+            </a>
+          )}
+        </nav>
+      </div>
+    )}
+  </div>
+</MainLayout>
+
+<style>
+  .contest-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 640px) {
+    .contest-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

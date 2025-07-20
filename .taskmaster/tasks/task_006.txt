@@ -1,0 +1,11 @@
+# Task ID: 6
+# Title: Integrate Advanced Code Editor
+# Status: pending
+# Dependencies: 2
+# Priority: medium
+# Description: Integrate the Microsoft Monaco Editor into the Astro.js frontend for a rich, responsive code editing experience.
+# Details:
+Configure Monaco Editor as an interactive Astro 'island'. Implement multi-language support, syntax highlighting, and basic IntelliSense. Ensure the editor is mobile-responsive with touch-friendly controls and gesture support.
+
+# Test Strategy:
+Manual and automated UI testing to verify editor functionality across different browsers and devices. Test language support and syntax highlighting accuracy.

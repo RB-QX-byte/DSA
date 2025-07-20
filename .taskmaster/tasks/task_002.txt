@@ -1,0 +1,11 @@
+# Task ID: 2
+# Title: Frontend Foundation with Astro.js
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Set up the initial Astro.js frontend project, focusing on static content rendering, basic component architecture, and mobile-first design.
+# Details:
+Create the main application layout and static pages for problem statements and editorials. Utilize Astro's Islands Architecture for future interactive components. Ensure mobile-first design principles and WCAG 2.1 compliance from the start.
+
+# Test Strategy:
+Component testing for UI elements. End-to-end tests for basic navigation and content rendering across multiple browsers and device sizes.

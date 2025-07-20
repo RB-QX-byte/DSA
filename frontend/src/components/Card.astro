@@ -1,0 +1,56 @@
+---
+export interface Props {
+  variant?: 'default' | 'outlined' | 'elevated' | 'flat';
+  padding?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
+  hover?: boolean;
+  clickable?: boolean;
+  class?: string;
+  [key: string]: any;
+}
+
+const {
+  variant = 'default',
+  padding = 'md',
+  hover = false,
+  clickable = false,
+  class: className = '',
+  ...props
+} = Astro.props;
+
+const baseClasses = 'rounded-lg transition-all duration-200';
+
+const variantClasses = {
+  default: 'bg-primary border border-primary',
+  outlined: 'bg-primary border border-secondary',
+  elevated: 'bg-primary shadow-md border border-primary',
+  flat: 'bg-secondary border-none'
+};
+
+const paddingClasses = {
+  none: '',
+  sm: 'p-3',
+  md: 'p-4',
+  lg: 'p-6',
+  xl: 'p-8'
+};
+
+const hoverClasses = hover ? 'hover:shadow-lg hover:scale-[1.02]' : '';
+const clickableClasses = clickable ? 'cursor-pointer' : '';
+
+const classes = `${baseClasses} ${variantClasses[variant]} ${paddingClasses[padding]} ${hoverClasses} ${clickableClasses} ${className}`;
+---
+
+<div class={classes} {...props}>
+  <slot />
+</div>
+
+<style>
+  /* Custom card styles */
+  .card-hover {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  }
+  
+  .card-hover:hover {
+    transform: translateY(-2px);
+  }
+</style>

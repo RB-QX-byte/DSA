@@ -1,0 +1,415 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+
+// Get the slug from the URL
+const { slug } = Astro.params;
+
+// Sample problem data (in a real app, this would come from an API)
+const problemData = {
+  'two-sum': {
+    id: 1,
+    title: 'Two Sum',
+    difficulty: 'Easy',
+    difficultyColor: 'text-success',
+    tags: ['Array', 'Hash Table'],
+    acceptanceRate: 49.2,
+    description: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
+    content: `
+## Problem Description
+
+Given an array of integers \`nums\` and an integer \`target\`, return indices of the two numbers such that they add up to \`target\`.
+
+You may assume that each input would have exactly one solution, and you may not use the same element twice.
+
+You can return the answer in any order.
+
+## Examples
+
+**Example 1:**
+\`\`\`
+Input: nums = [2,7,11,15], target = 9
+Output: [0,1]
+Explanation: Because nums[0] + nums[1] == 9, we return [0, 1].
+\`\`\`
+
+**Example 2:**
+\`\`\`
+Input: nums = [3,2,4], target = 6
+Output: [1,2]
+\`\`\`
+
+**Example 3:**
+\`\`\`
+Input: nums = [3,3], target = 6
+Output: [0,1]
+\`\`\`
+
+## Constraints
+
+- \`2 <= nums.length <= 10^4\`
+- \`-10^9 <= nums[i] <= 10^9\`
+- \`-10^9 <= target <= 10^9\`
+- Only one valid answer exists.
+
+## Follow-up
+Can you come up with an algorithm that is less than O(n²) time complexity?
+    `,
+    hints: [
+      'A really brute force way would be to search for all possible pairs of numbers but that would be too slow.',
+      'Think about how you can reduce the time complexity by using a hash table.',
+      'Try to think about what you need to store in the hash table to solve this problem efficiently.'
+    ],
+    sampleCode: {
+      cpp: `class Solution {
+public:
+    vector<int> twoSum(vector<int>& nums, int target) {
+        // Your code here
+    }
+};`,
+      python: `class Solution:
+    def twoSum(self, nums: List[int], target: int) -> List[int]:
+        # Your code here
+        pass`,
+      java: `class Solution {
+    public int[] twoSum(int[] nums, int target) {
+        // Your code here
+    }
+}`,
+      javascript: `/**
+ * @param {number[]} nums
+ * @param {number} target
+ * @return {number[]}
+ */
+var twoSum = function(nums, target) {
+    // Your code here
+};`
+    },
+    testCases: [
+      {
+        input: 'nums = [2,7,11,15], target = 9',
+        output: '[0,1]'
+      },
+      {
+        input: 'nums = [3,2,4], target = 6',
+        output: '[1,2]'
+      },
+      {
+        input: 'nums = [3,3], target = 6',
+        output: '[0,1]'
+      }
+    ]
+  },
+  'maximum-subarray': {
+    id: 2,
+    title: 'Maximum Subarray',
+    difficulty: 'Medium',
+    difficultyColor: 'text-warning',
+    tags: ['Array', 'Dynamic Programming'],
+    acceptanceRate: 54.8,
+    description: 'Given an integer array nums, find the contiguous subarray which has the largest sum and return its sum.',
+    content: `
+## Problem Description
+
+Given an integer array \`nums\`, find the contiguous subarray (containing at least one number) which has the largest sum and return its sum.
+
+A subarray is a contiguous part of an array.
+
+## Examples
+
+**Example 1:**
+\`\`\`
+Input: nums = [-2,1,-3,4,-1,2,1,-5,4]
+Output: 6
+Explanation: [4,-1,2,1] has the largest sum = 6.
+\`\`\`
+
+**Example 2:**
+\`\`\`
+Input: nums = [1]
+Output: 1
+\`\`\`
+
+**Example 3:**
+\`\`\`
+Input: nums = [5,4,-1,7,8]
+Output: 23
+\`\`\`
+
+## Constraints
+
+- \`1 <= nums.length <= 10^5\`
+- \`-10^4 <= nums[i] <= 10^4\`
+
+## Follow-up
+If you have figured out the O(n) solution, try coding another solution using the divide and conquer approach, which is more subtle.
+    `,
+    hints: [
+      'Try to think about dynamic programming. What would be the state?',
+      'Consider Kadane\'s algorithm for finding maximum subarray sum.',
+      'At each position, decide whether to extend the existing subarray or start a new one.'
+    ],
+    sampleCode: {
+      cpp: `class Solution {
+public:
+    int maxSubArray(vector<int>& nums) {
+        // Your code here
+    }
+};`,
+      python: `class Solution:
+    def maxSubArray(self, nums: List[int]) -> int:
+        # Your code here
+        pass`,
+      java: `class Solution {
+    public int maxSubArray(int[] nums) {
+        // Your code here
+    }
+}`,
+      javascript: `/**
+ * @param {number[]} nums
+ * @return {number}
+ */
+var maxSubArray = function(nums) {
+    // Your code here
+};`
+    },
+    testCases: [
+      {
+        input: 'nums = [-2,1,-3,4,-1,2,1,-5,4]',
+        output: '6'
+      },
+      {
+        input: 'nums = [1]',
+        output: '1'
+      },
+      {
+        input: 'nums = [5,4,-1,7,8]',
+        output: '23'
+      }
+    ]
+  }
+};
+
+// Get the problem data or return 404
+const problem = problemData[slug];
+if (!problem) {
+  return Astro.redirect('/404');
+}
+
+// Default to C++ for code display
+const selectedLanguage = 'cpp';
+---
+
+<MainLayout title={problem.title} description={problem.description}>
+  <div class="container py-8">
+    <!-- Problem Header -->
+    <div class="mb-8">
+      <div class="flex items-center gap-4 mb-4">
+        <h1 class="text-3xl md:text-4xl font-bold">{problem.title}</h1>
+        <span class={`px-3 py-1 text-sm font-medium rounded ${problem.difficultyColor}`}>
+          {problem.difficulty}
+        </span>
+      </div>
+      
+      <div class="flex flex-wrap gap-4 items-center text-sm text-secondary">
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <span>{problem.acceptanceRate}% accepted</span>
+        </div>
+        
+        <div class="flex gap-2">
+          {problem.tags.map((tag) => (
+            <span class="px-2 py-1 bg-secondary text-secondary rounded">
+              {tag}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+    
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <!-- Left Column - Problem Statement -->
+      <div class="space-y-6">
+        <!-- Problem Description -->
+        <article class="bg-primary border border-primary rounded-lg p-6">
+          <div class="prose prose-gray max-w-none">
+            <div set:html={problem.content} />
+          </div>
+        </article>
+        
+        <!-- Hints Section -->
+        <section class="bg-primary border border-primary rounded-lg p-6">
+          <h3 class="text-lg font-semibold mb-4">Hints</h3>
+          <div class="space-y-3">
+            {problem.hints.map((hint, index) => (
+              <details class="group">
+                <summary class="cursor-pointer p-3 bg-secondary rounded-lg hover:bg-tertiary transition-colors">
+                  <span class="font-medium">Hint {index + 1}</span>
+                </summary>
+                <div class="mt-2 p-3 text-secondary">
+                  {hint}
+                </div>
+              </details>
+            ))}
+          </div>
+        </section>
+        
+        <!-- Test Cases -->
+        <section class="bg-primary border border-primary rounded-lg p-6">
+          <h3 class="text-lg font-semibold mb-4">Test Cases</h3>
+          <div class="space-y-4">
+            {problem.testCases.map((testCase, index) => (
+              <div class="p-4 bg-secondary rounded-lg">
+                <h4 class="font-medium mb-2">Test Case {index + 1}</h4>
+                <div class="space-y-2 text-sm">
+                  <div>
+                    <strong>Input:</strong>
+                    <code class="block mt-1 p-2 bg-tertiary rounded">{testCase.input}</code>
+                  </div>
+                  <div>
+                    <strong>Expected Output:</strong>
+                    <code class="block mt-1 p-2 bg-tertiary rounded">{testCase.output}</code>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+      
+      <!-- Right Column - Code Editor -->
+      <div class="space-y-6">
+        <!-- Language Selector -->
+        <div class="flex gap-2 flex-wrap">
+          <button class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors">
+            C++
+          </button>
+          <button class="px-4 py-2 bg-secondary text-secondary rounded-lg hover:bg-tertiary transition-colors">
+            Python
+          </button>
+          <button class="px-4 py-2 bg-secondary text-secondary rounded-lg hover:bg-tertiary transition-colors">
+            Java
+          </button>
+          <button class="px-4 py-2 bg-secondary text-secondary rounded-lg hover:bg-tertiary transition-colors">
+            JavaScript
+          </button>
+        </div>
+        
+        <!-- Code Editor Placeholder -->
+        <div class="bg-gray-900 text-gray-100 rounded-lg overflow-hidden">
+          <div class="bg-gray-800 px-4 py-2 border-b border-gray-700">
+            <span class="text-sm">Code Editor</span>
+          </div>
+          <div class="p-4">
+            <pre class="text-sm overflow-x-auto"><code>{problem.sampleCode[selectedLanguage]}</code></pre>
+          </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="flex gap-4">
+          <button class="flex-1 px-4 py-2 bg-success text-white rounded-lg hover:bg-success-dark transition-colors">
+            Run Code
+          </button>
+          <button class="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors">
+            Submit Solution
+          </button>
+        </div>
+        
+        <!-- Results Panel -->
+        <div class="bg-primary border border-primary rounded-lg p-6">
+          <h3 class="text-lg font-semibold mb-4">Output</h3>
+          <div class="bg-secondary rounded-lg p-4">
+            <p class="text-secondary text-sm">
+              Run your code to see the output here.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Navigation -->
+    <div class="mt-8 flex justify-between items-center">
+      <a href="/problems" class="flex items-center gap-2 text-primary hover:text-primary-dark transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+        Back to Problems
+      </a>
+      
+      <div class="flex gap-4">
+        <button class="px-4 py-2 bg-secondary text-secondary rounded-lg hover:bg-tertiary transition-colors">
+          Previous Problem
+        </button>
+        <button class="px-4 py-2 bg-secondary text-secondary rounded-lg hover:bg-tertiary transition-colors">
+          Next Problem
+        </button>
+      </div>
+    </div>
+  </div>
+</MainLayout>
+
+<style>
+  /* Prose styling for markdown content */
+  .prose {
+    color: var(--color-text-primary);
+  }
+  
+  .prose h2 {
+    color: var(--color-text-primary);
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+  }
+  
+  .prose h3 {
+    color: var(--color-text-primary);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .prose p {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+  }
+  
+  .prose code {
+    background-color: var(--color-bg-secondary);
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    font-size: 0.875em;
+    font-family: var(--font-family-mono);
+  }
+  
+  .prose pre {
+    background-color: var(--color-bg-secondary);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    margin: 1rem 0;
+  }
+  
+  .prose pre code {
+    background-color: transparent;
+    padding: 0;
+  }
+  
+  .prose ul {
+    list-style-type: disc;
+    padding-left: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .prose li {
+    margin-bottom: 0.5rem;
+  }
+  
+  .prose strong {
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+</style>

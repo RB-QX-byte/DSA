@@ -1,0 +1,685 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Core Backend and Database Setup",
+        "description": "Establish the foundational backend architecture using GoLang in a modular monolithic style and integrate with Supabase for database and authentication, as outlined in Phase 1.",
+        "details": "Implement User Management and Problem Management services. Design and create the initial database schema in PostgreSQL (via Supabase) with critical indexes for users and problems. Configure Supabase Auth and Row Level Security (RLS) for data isolation.",
+        "testStrategy": "Unit tests for GoLang services. Integration tests for Supabase connection, authentication flow, and basic CRUD operations on user and problem tables.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design and Implement Initial PostgreSQL Schema",
+            "description": "Design and create the initial database schema in Supabase for user and problem management, including tables, columns, and critical indexes.",
+            "dependencies": [],
+            "details": "Using the Supabase SQL editor or migrations, create the `users` table (linking to `auth.users`) and the `problems` table. Define all necessary columns (e.g., `users.username`, `problems.title`, `problems.difficulty`). Establish primary keys, foreign keys, and create indexes on frequently queried columns like user IDs and problem difficulties to optimize performance.",
+            "status": "done",
+            "testStrategy": "Verify table and index creation via the Supabase dashboard. Run sample SQL queries to confirm schema integrity and index usage."
+          },
+          {
+            "id": 2,
+            "title": "Configure Supabase Auth and Row Level Security (RLS)",
+            "description": "Set up Supabase's built-in authentication and implement Row Level Security policies to ensure proper data isolation and access control.",
+            "dependencies": [
+              1
+            ],
+            "details": "Enable and configure the required authentication providers (e.g., email/password). Create and enable RLS policies on the `users` and `problems` tables. For the `users` table, ensure users can only select and update their own record. For the `problems` table, set a default policy allowing authenticated users to read all problems.",
+            "status": "done",
+            "testStrategy": "Perform manual sign-up and login tests. Write integration test scripts that attempt to access/modify another user's data to confirm that RLS policies correctly deny access."
+          },
+          {
+            "id": 3,
+            "title": "Initialize GoLang Modular Monolith Backend",
+            "description": "Set up the foundational GoLang project structure, establish a connection to the Supabase database, and configure the basic HTTP server.",
+            "dependencies": [],
+            "details": "Create the GoLang project with a modular directory structure (e.g., `/internal/user`, `/internal/problem`, `/pkg/database`). Implement database connection logic using the `pgx` driver and the Supabase connection string. Set up a basic HTTP server using a router like `chi` and create a health check endpoint.",
+            "status": "done",
+            "testStrategy": "Run the application and hit the health check endpoint to verify the server is running. Write a simple integration test to confirm a successful connection to the Supabase database can be established."
+          },
+          {
+            "id": 4,
+            "title": "Implement User Management Service",
+            "description": "Develop the GoLang service and API endpoints for managing user profiles, interacting with the `users` table.",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "In the `/internal/user` module, implement the service logic for fetching and updating user profiles. Create REST API endpoints (e.g., `GET /api/users/me`, `PUT /api/users/me`) that handle requests, extract user identity from the JWT, and call the service logic. The service will perform CRUD operations on the `users` table.",
+            "status": "done",
+            "testStrategy": "Write unit tests for the user service logic (e.g., input validation). Develop integration tests for the API endpoints using test JWTs to simulate authenticated users and verify profile data can be read and updated correctly."
+          },
+          {
+            "id": 5,
+            "title": "Implement Problem Management Service",
+            "description": "Develop the GoLang service and API endpoints for creating, retrieving, and listing competitive programming problems.",
+            "dependencies": [
+              3
+            ],
+            "details": "In the `/internal/problem` module, implement the service logic for problem management. Create REST API endpoints for basic CRUD operations (e.g., `GET /api/problems`, `GET /api/problems/:id`, `POST /api/problems`). The `POST` endpoint should initially be restricted to a specific role (e.g., admin) for creating new problems.",
+            "status": "done",
+            "testStrategy": "Write unit tests for the problem service logic. Create integration tests to verify the full lifecycle of a problem via the API: create (as admin), read one, and read a list of all problems."
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Frontend Foundation with Astro.js",
+        "description": "Set up the initial Astro.js frontend project, focusing on static content rendering, basic component architecture, and mobile-first design.",
+        "details": "Create the main application layout and static pages for problem statements and editorials. Utilize Astro's Islands Architecture for future interactive components. Ensure mobile-first design principles and WCAG 2.1 compliance from the start.",
+        "testStrategy": "Component testing for UI elements. End-to-end tests for basic navigation and content rendering across multiple browsers and device sizes.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Initialize Astro.js Project and Configure Development Environment",
+            "description": "Set up a new Astro.js project using the official CLI. Configure essential development tools, including TypeScript, Prettier for code formatting, and ESLint for code linting, to establish a consistent and high-quality codebase from the outset.",
+            "dependencies": [],
+            "details": "Execute `npm create astro@latest` to bootstrap the project. Configure `astro.config.mjs` for basic settings. Set up `tsconfig.json` for TypeScript strictness. Create and configure `.prettierrc` and `.eslintrc.cjs` files with project-specific rules. Establish the core directory structure: `src/components`, `src/layouts`, `src/pages`, `src/styles`.",
+            "status": "done",
+            "testStrategy": "Verify the development server (`npm run dev`) launches successfully. Run linting and formatting scripts (`npm run lint`, `npm run format`) to confirm they execute without errors and enforce coding standards."
+          },
+          {
+            "id": 2,
+            "title": "Implement Mobile-First Global Styles and Accessibility Baseline",
+            "description": "Establish the project's foundational CSS, including a CSS reset, typography, a responsive spacing system, and a color palette, adhering strictly to mobile-first principles. Integrate baseline accessibility features to ensure WCAG 2.1 AA compliance.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create a global stylesheet in `src/styles/global.css`. Implement a modern CSS reset. Define CSS custom properties for the design system (colors, fonts, spacing). Style base HTML elements with responsive font sizes. Implement a 'skip-to-content' link for keyboard navigation and ensure all base color combinations meet contrast ratio requirements.",
+            "status": "done",
+            "testStrategy": "Use browser developer tools to validate responsive behavior across multiple viewport sizes. Run an initial accessibility audit using Lighthouse or Axe on a blank page to verify color contrast and the presence of the skip-to-content link."
+          },
+          {
+            "id": 3,
+            "title": "Develop the Core Application Layout Component",
+            "description": "Create the main `MainLayout.astro` component that will serve as the structural template for all pages. This component will include the common header, footer, and a primary content area, ensuring a consistent look and feel across the application.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Create a `MainLayout.astro` file within `src/layouts/`. This file will contain the root HTML structure, including the `<head>` tag with metadata, links to global stylesheets, and the `<body>`. The body will feature a `<header>`, a `<main>` element containing a `<slot />` for dynamic page content, and a `<footer>`.",
+            "status": "done",
+            "testStrategy": "Create a temporary test page in `src/pages/` that utilizes the `MainLayout.astro` component. Verify in the browser that the header, footer, and slotted content render correctly and inherit the global styles."
+          },
+          {
+            "id": 4,
+            "title": "Build Static Pages for Problem Statements and Editorials",
+            "description": "Create the static Astro pages for displaying problem statements and editorials. These pages will utilize the core application layout and be structured with semantic HTML to ensure content is accessible and SEO-friendly.",
+            "dependencies": [
+              3
+            ],
+            "details": "Create dynamic route files, such as `src/pages/problems/[slug].astro` and `src/pages/editorials/[slug].astro`. These pages will import and use the `MainLayout` component. Populate the pages with placeholder content using semantic tags like `<article>`, `<section>`, `<h1>`, and `<pre>` for code blocks, simulating the structure of a real problem or editorial.",
+            "status": "done",
+            "testStrategy": "Manually navigate to the newly created page routes in a browser. Verify that the content is correctly displayed within the main layout, is styled correctly, and adapts properly to both mobile and desktop screen sizes."
+          },
+          {
+            "id": 5,
+            "title": "Develop Basic Reusable UI Components",
+            "description": "Create a small library of fundamental, reusable UI components such as buttons, cards, and tags. These components will be built with Astro and styled according to the global design system, preparing for future integration of interactive elements via Astro Islands.",
+            "dependencies": [
+              2
+            ],
+            "details": "In the `src/components/` directory, create individual `.astro` files for each component (e.g., `Button.astro`, `Card.astro`). Style these components using scoped CSS. Design them to be composable and accept props for content and variations. While these are static now, their API design should consider future client-side interactivity.",
+            "status": "done",
+            "testStrategy": "Use the newly created components within the static problem and editorial pages to ensure they render correctly and are visually consistent. Perform component-level testing by creating a test page that displays all component variations to check props and styling."
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Implement Basic Code Execution Judge System",
+        "description": "Implement the initial version of the secure code execution judge system to process submissions.",
+        "details": "Set up a distributed worker pool using Asynq (Redis-based queue). Implement the primary sandboxing layer with 'Isolate' for resource control. The system should support a limited set of languages and execute code against predefined test cases, returning a verdict.",
+        "testStrategy": "Unit tests for the judge's logic (compilation, execution, comparison). Integration tests for the submission pipeline from API to judge worker and back. Security testing against simple malicious code attempts.",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set Up Asynq Worker Pool and Redis Infrastructure",
+            "description": "Configure and deploy the Redis instance and establish the basic Asynq client (producer) and server (worker) structure for the distributed judging queue.",
+            "dependencies": [],
+            "details": "Install and configure a Redis server. In the GoLang backend, define the Asynq client to enqueue submission tasks and a basic worker server to dequeue and process them. Define the initial task payload structure for a code submission, including submission ID, source code, language, and resource limits.",
+            "status": "done",
+            "testStrategy": "Create a simple 'ping' task to verify that the API can enqueue a task and a worker can consume and log it, confirming the queue is operational."
+          },
+          {
+            "id": 2,
+            "title": "Integrate 'Isolate' for Secure Sandboxing",
+            "description": "Install the 'Isolate' sandboxing tool on the worker environment and create a Go wrapper module to manage secure, resource-constrained execution environments.",
+            "dependencies": [],
+            "details": "Install 'Isolate' and its dependencies on the machine/container image for the judge workers. Develop a Go service or package that provides an API to initialize a sandbox (`isolate --init`), place files inside it, run commands with specified time/memory/process limits, and clean up the sandbox (`isolate --cleanup`).",
+            "status": "done",
+            "testStrategy": "Unit tests for the Go wrapper to confirm it can create a sandbox, execute a simple command (e.g., `echo 'test'`), enforce resource limits (e.g., a short time limit), and destroy the sandbox correctly."
+          },
+          {
+            "id": 3,
+            "title": "Implement Core Compilation and Execution Logic",
+            "description": "Develop the logic within an Asynq task handler to compile the submitted source code and execute the resulting binary within the 'Isolate' sandbox against a single test case.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Create the primary Asynq task handler that receives a submission payload. Implement language-specific compilation steps (e.g., using `gcc` for C++, `go build` for Go). Use the 'Isolate' wrapper to run the compiled program, providing test case input via stdin and capturing stdout, stderr, and execution metadata (time, memory).",
+            "status": "done",
+            "testStrategy": "Unit tests for the compilation and execution flow for each supported language using a simple program that reads from stdin and writes to stdout."
+          },
+          {
+            "id": 4,
+            "title": "Develop Test Case Iteration and Verdict Generation",
+            "description": "Implement the logic to run the user's code against all predefined test cases for a problem and compare the output with the expected solution to generate a final verdict.",
+            "dependencies": [
+              3
+            ],
+            "details": "The judge worker will fetch all test cases for a given problem. It will loop through each test case, executing the user's code using the logic from the previous subtask. Implement a diffing utility to check the user's stdout against the expected output, ignoring common whitespace issues. Handle all standard verdicts: Accepted (AC), Wrong Answer (WA), Time Limit Exceeded (TLE), Memory Limit Exceeded (MLE), Runtime Error (RE), and Compilation Error (CE). The process stops on the first failing test case.",
+            "status": "done",
+            "testStrategy": "Unit tests for the output comparator. Test the verdict logic with submissions designed to fail in specific ways (e.g., infinite loop for TLE, incorrect output for WA, division by zero for RE)."
+          },
+          {
+            "id": 5,
+            "title": "Integrate Judge Worker with API and Database",
+            "description": "Connect the submission API endpoint to the Asynq queue and implement the mechanism for the judge worker to report back the final verdict and persist it in the database.",
+            "dependencies": [
+              4
+            ],
+            "details": "Modify the submission API endpoint to create a submission record in the database (with a 'pending' status) and then enqueue a job in Asynq with the submission ID. After the worker completes the judgment (from subtask 4), it will update the corresponding submission record in the database with the final verdict, execution time, and memory usage.",
+            "status": "done",
+            "testStrategy": "An end-to-end integration test: an API call submits code, verify the task is enqueued, processed by a worker, and the database record is correctly updated with the final verdict."
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Develop Contest Management Module",
+        "description": "Develop the backend services and frontend interfaces for creating, managing, and participating in contests, as part of Phase 2.",
+        "details": "Implement the Contest Management service in the GoLang backend. Create REST APIs for contest lifecycle (creation, registration, start, end). Build UI components in Astro for viewing upcoming/live contests and accessing contest-specific problem sets.",
+        "testStrategy": "Integration tests for the full contest flow: admin creates contest, user registers, user participates. Unit tests for contest logic including timing, scoring, and access control.",
+        "priority": "high",
+        "dependencies": [
+          1,
+          2
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design and Implement Contest Data Models and Database Schema",
+            "description": "Define and implement the necessary database tables and corresponding GoLang data models for contests, contest problems, and user registrations. This forms the foundational data layer for the contest module.",
+            "dependencies": [],
+            "details": "Create database migration scripts for `contests` (e.g., title, start_time, end_time, rules), `contest_problems` (linking problems to contests), and `contest_registrations` (linking users to contests). Implement the GoLang structs that map to these tables, including appropriate data types and validation tags.",
+            "status": "done",
+            "testStrategy": "Unit tests for GoLang data models to ensure data validation rules (e.g., end_time must be after start_time) are enforced correctly. Validate database schema and constraints through migration tests."
+          },
+          {
+            "id": 2,
+            "title": "Develop REST APIs for Contest Lifecycle Management",
+            "description": "Implement the backend REST API endpoints in GoLang for the complete contest lifecycle. This includes endpoints for administrative creation and management, as well as user-facing registration and participation.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create admin-only endpoints: `POST /contests` (create), `PUT /contests/{id}` (update), `DELETE /contests/{id}`. Create public/user endpoints: `GET /contests` (list), `GET /contests/{id}` (details), `POST /contests/{id}/register`. Implement business logic for state transitions (scheduled, live, ended) and access control.",
+            "status": "done",
+            "testStrategy": "API integration tests for each endpoint, covering success cases, error handling (e.g., invalid input, unauthorized access), and correct HTTP status codes. Unit test the business logic for contest timing and registration rules."
+          },
+          {
+            "id": 3,
+            "title": "Build Astro UI for Contest Discovery and Listing",
+            "description": "Develop the frontend components in Astro to allow users to view lists of upcoming, live, and past contests. This view will serve as the main entry point for users to find and engage with contests.",
+            "dependencies": [
+              2
+            ],
+            "details": "Create an Astro page that fetches data from the `GET /api/v1/contests` endpoint. Design and implement a reusable 'ContestCard' component to display key information like name, duration, and registration status. Implement filtering or tabbing to separate upcoming, live, and completed contests.",
+            "status": "done",
+            "testStrategy": "Component tests for the 'ContestCard' to ensure it renders different states correctly. End-to-end tests to verify the page fetches and displays a list of contests from the backend API."
+          },
+          {
+            "id": 4,
+            "title": "Implement Contest Detail and Registration Page",
+            "description": "Create the detailed contest view page in Astro, which will show comprehensive information about a single contest and provide the interface for users to register.",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Develop a dynamic Astro page (e.g., `/contests/[id]`) that fetches data from `GET /api/v1/contests/{id}`. Display all contest details, such as rules, duration, and the list of prizes. Implement a registration button that calls the `POST /api/v1/contests/{id}/register` endpoint and provides feedback to the user.",
+            "status": "done",
+            "testStrategy": "UI tests to ensure all contest details are rendered correctly. Integration tests to simulate the user registration flow, including successful registration and error scenarios (e.g., registration closed)."
+          },
+          {
+            "id": 5,
+            "title": "Develop Live Contest Workspace UI",
+            "description": "Build the primary interface in Astro for participants to use during a live contest. This workspace will display the problem set and allow users to navigate to the code editor for submissions.",
+            "dependencies": [
+              2
+            ],
+            "details": "Create a secure, time-gated Astro page accessible only to registered users during the contest's active window. The page will fetch the contest-specific problem list from a protected API endpoint. It should feature a problem statement panel, a list of problems for navigation, and a clear link to the submission interface for each problem. This UI will later integrate with the real-time leaderboard (Task 5).",
+            "status": "done",
+            "testStrategy": "End-to-end tests to verify that a registered user can access the workspace during the contest but is denied access before it starts or after it ends. UI tests to check the correct rendering and navigation of the problem set."
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Implement Real-time Leaderboards and Submission Tracking",
+        "description": "Integrate real-time features for live contest leaderboards and submission status updates using SSE or Supabase subscriptions.",
+        "details": "Utilize Supabase's real-time subscriptions or Server-Sent Events (SSE) to push live data to the frontend. Create an interactive leaderboard component in Astro that updates without page reloads. Display live submission verdicts (e.g., Compiling, Running, Accepted).",
+        "testStrategy": "End-to-end tests to verify real-time updates on the UI. Load testing to ensure the real-time infrastructure can handle 20,000+ concurrent users during a contest.",
+        "priority": "high",
+        "dependencies": [
+          3,
+          4
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Configure Real-time Backend Infrastructure",
+            "description": "Set up and configure the real-time data pipeline using Supabase Realtime subscriptions. This involves enabling real-time capabilities on the necessary database tables and ensuring the backend can handle broadcasting updates.",
+            "dependencies": [],
+            "details": "Enable Supabase Realtime on the 'submissions' and a new 'leaderboard_scores' table. Configure Row Level Security (RLS) policies to ensure users can only subscribe to data they are permitted to see (e.g., their own submission status, public leaderboard data for a contest). This forms the foundation for all real-time features.",
+            "status": "done",
+            "testStrategy": "Write an integration test to confirm that a direct database change to a monitored table (e.g., updating a submission status) successfully broadcasts a message to a subscribed test client."
+          },
+          {
+            "id": 2,
+            "title": "Implement Leaderboard Data Aggregation Logic",
+            "description": "Develop the backend logic, likely as a PostgreSQL function or materialized view, to process submissions and calculate contest leaderboard rankings, scores, and penalties.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create a database function that takes a 'contest_id' and aggregates data from the 'submissions' table. The function should calculate the number of problems solved, apply time-based penalties for incorrect attempts, and rank participants accordingly. This aggregated data will populate the 'leaderboard_scores' table, which will then broadcast updates via the channel set up in subtask 1.",
+            "status": "done",
+            "testStrategy": "Unit test the PostgreSQL function with various submission scenarios (e.g., multiple correct submissions, submissions with penalties, submissions after the contest ends) to verify the scoring and ranking logic is accurate."
+          },
+          {
+            "id": 3,
+            "title": "Develop Real-time Submission Status Component",
+            "description": "Create a frontend component in Astro that provides users with live updates on the status of their code submissions.",
+            "dependencies": [
+              1
+            ],
+            "details": "Build an Astro Island component that uses the Supabase client library to subscribe to changes on the 'submissions' table, filtered for the currently authenticated user. The component will display statuses like 'In Queue', 'Compiling', 'Running Test Cases', 'Accepted', or 'Wrong Answer' and update dynamically without a page reload.",
+            "status": "done",
+            "testStrategy": "Use component-level tests with mock data to verify the UI correctly displays different submission statuses. Conduct an end-to-end test where a user submits code and watches the status update in real-time on the UI."
+          },
+          {
+            "id": 4,
+            "title": "Build Interactive Real-time Leaderboard Component",
+            "description": "Create the main leaderboard UI component in Astro that displays contest rankings and updates automatically as new submissions are accepted.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Develop an Astro Island that subscribes to the 'leaderboard_scores' table for a specific contest. The component will render the ranked list of participants, showing rank, name, score, and problems solved. It should efficiently re-render rows as updates are received from Supabase Realtime, and it should highlight the current user's position in the ranking.",
+            "status": "done",
+            "testStrategy": "Perform an end-to-end test where multiple simulated users submit solutions, and verify that the leaderboard UI updates correctly and in the proper order for all connected clients."
+          },
+          {
+            "id": 5,
+            "title": "Conduct Load Testing and Optimization",
+            "description": "Perform stress and load testing on the real-time infrastructure to ensure it meets the requirement of handling 20,000+ concurrent users during a live contest.",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "Use a load testing tool like k6 or Artillery to simulate thousands of concurrent clients subscribing to both submission status and leaderboard channels. Monitor Supabase instance performance (CPU, memory, connection count) and database query efficiency under load. Identify and resolve any bottlenecks found in the real-time pipeline or the leaderboard aggregation logic.",
+            "status": "done",
+            "testStrategy": "Execute a load test script that simulates a peak-hour contest scenario. The test will pass if the system maintains real-time update latency below a predefined threshold (e.g., 2 seconds) and operates without errors or crashes for the duration of the test at target concurrency."
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Integrate Advanced Code Editor",
+        "description": "Integrate the Microsoft Monaco Editor into the Astro.js frontend for a rich, responsive code editing experience.",
+        "details": "Configure Monaco Editor as an interactive Astro 'island'. Implement multi-language support, syntax highlighting, and basic IntelliSense. Ensure the editor is mobile-responsive with touch-friendly controls and gesture support.",
+        "testStrategy": "Manual and automated UI testing to verify editor functionality across different browsers and devices. Test language support and syntax highlighting accuracy.",
+        "priority": "medium",
+        "dependencies": [
+          2
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Monaco Editor Astro 'Island' Component",
+            "description": "Set up the basic integration of the Monaco Editor within the Astro.js project. This involves installing the necessary packages and creating a client-side rendered Astro component ('island') to wrap the editor instance.",
+            "dependencies": [],
+            "details": "Install the `monaco-editor` package and a suitable bundler plugin like `vite-plugin-monaco-editor`. Create a new Astro component (e.g., `MonacoEditor.astro`) with a `client:visible` directive. In the component's client-side script, initialize the editor and mount it to a DOM element.",
+            "status": "done",
+            "testStrategy": "Verify that a basic, unconfigured editor instance renders correctly on a page within the Astro application without errors in the browser console."
+          },
+          {
+            "id": 2,
+            "title": "Configure Syntax Highlighting and Multi-Language Support",
+            "description": "Configure the Monaco Editor instance to support multiple programming languages (e.g., C++, Java, Python) with accurate syntax highlighting. This includes loading the necessary language workers and setting up theme options.",
+            "dependencies": [
+              1
+            ],
+            "details": "Configure the Vite plugin to bundle workers for required languages (JavaScript, TypeScript, CSS, HTML, Python, C++, Java). Set a default language and theme (e.g., 'vs-dark') upon editor initialization. Implement a prop-based mechanism in the Astro component to dynamically switch the editor's language.",
+            "status": "done",
+            "testStrategy": "Manually paste code snippets from different supported languages into the editor and verify that syntax is highlighted correctly for each one. Test the dynamic language switching functionality."
+          },
+          {
+            "id": 3,
+            "title": "Enable Basic IntelliSense and Code Completion",
+            "description": "Activate and configure Monaco's built-in IntelliSense capabilities for supported languages. This provides users with basic code completion, parameter info, and hover-based documentation.",
+            "dependencies": [
+              2
+            ],
+            "details": "Ensure the language-specific workers, which provide IntelliSense, are correctly loaded via the bundler plugin. Verify that editor options related to suggestions (`quickSuggestions`), hover information (`hover.enabled`), and parameter hints are enabled. No extra configuration is needed for basic features in languages like JS/TS.",
+            "status": "done",
+            "testStrategy": "In a JavaScript/TypeScript context, type standard library keywords (e.g., `Math.`) and verify that a suggestion list appears. Hover over a function to confirm that a documentation pop-up is displayed."
+          },
+          {
+            "id": 4,
+            "title": "Adapt Editor for Mobile and Touch Devices",
+            "description": "Make the Monaco Editor component fully responsive and usable on mobile devices. This includes adjusting the layout, enabling touch-friendly controls, and ensuring gesture support for scrolling and selection.",
+            "dependencies": [
+              1
+            ],
+            "details": "Use CSS media queries to ensure the editor's container fluidly adapts to different screen sizes. Configure Monaco editor options to optimize for mobile, such as setting `wordWrap: 'on'`, adjusting `fontSize`, and potentially hiding the minimap (`minimap: { enabled: false }`) on smaller viewports. Ensure touch-based scrolling and text selection are functional.",
+            "status": "done",
+            "testStrategy": "Test the editor using browser developer tools (mobile emulation) and on physical mobile devices (iOS and Android). Verify that the editor is not cut off, text is readable, and touch interactions like scrolling and selection are smooth."
+          },
+          {
+            "id": 5,
+            "title": "Finalize Integration and Cross-Browser Testing",
+            "description": "Conduct comprehensive testing of the integrated Monaco Editor across all target browsers (Chrome, Firefox, Safari) and devices to ensure consistent functionality and appearance, verifying all features work together seamlessly.",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "Create a test suite that covers all implemented features: component rendering, language switching, syntax highlighting accuracy, IntelliSense responsiveness, and mobile usability. Perform manual testing on all supported browsers and devices to catch any platform-specific issues.",
+            "status": "done",
+            "testStrategy": "Execute the manual test suite. Automate a basic UI test using a framework like Playwright to confirm the editor loads and is interactive on page load. Document and resolve any identified cross-browser inconsistencies."
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Develop AI-Powered User Performance Analytics",
+        "description": "Develop the backend system to track and analyze user performance using skill progression modeling, as part of Phase 3.",
+        "details": "Implement a system to track the 15 key metrics (problem-solving speed, debugging efficiency, etc.). Use Bayesian inference for skill progression modeling. Create dashboard widgets using Chart.js/D3.js to visualize performance trends and skill radar charts.",
+        "testStrategy": "Data validation tests for the tracked metrics. Unit tests for the analytics models. UI tests for the dashboard visualizations to ensure data is rendered correctly.",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          3
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design and Implement Performance Data Model & Ingestion Pipeline",
+            "description": "Define the database schema required to store the 15 key user performance metrics over time. Implement a data ingestion service to process raw events from the code judge and contest systems, calculating and storing these metrics.",
+            "dependencies": [],
+            "details": "The schema must support time-series data for metrics like problem-solving speed, submission attempts per problem, and debugging efficiency. The ingestion service will listen for events (e.g., submission verdicts from Task 3) and populate the analytics tables. This forms the data foundation for all subsequent analysis.",
+            "status": "done",
+            "testStrategy": "Data validation tests to ensure metrics are calculated and stored correctly from raw event data. Unit tests for the ingestion logic. Stress test the ingestion pipeline to handle high-volume submission events."
+          },
+          {
+            "id": 2,
+            "title": "Develop the Core Bayesian Skill Progression Model",
+            "description": "Implement the Bayesian inference model to estimate and update user skill levels. The model will take a user's performance history as input and output a probability distribution for each of the 15 key skills.",
+            "dependencies": [
+              1
+            ],
+            "details": "Use a suitable backend library (e.g., a probabilistic programming library in Python or a statistical package in Go) to build the model. The model should be modular, allowing for future adjustments to the skill set or inference logic. It will operate on the data collected in the previous subtask.",
+            "status": "done",
+            "testStrategy": "Unit tests for the model's mathematical logic using synthetic data with known outcomes. Backtesting the model against a sample dataset to evaluate its predictive accuracy and convergence properties."
+          },
+          {
+            "id": 3,
+            "title": "Create Analytics Processing Service",
+            "description": "Develop a background service that periodically runs the Bayesian skill progression model for users. This service will fetch new performance data, apply the model, and store the updated skill estimates.",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement this as a scheduled or event-triggered job using a queueing system like Asynq. The service will be triggered after significant user activity (e.g., completing a contest). It will persist the model's output (e.g., mean and variance of each skill) to a user skill profile table for fast retrieval.",
+            "status": "done",
+            "testStrategy": "Integration tests to verify the end-to-end flow: a new performance event triggers the job, the job runs the model, and the user's skill profile in the database is updated correctly."
+          },
+          {
+            "id": 4,
+            "title": "Implement API Endpoints for Performance Analytics",
+            "description": "Create secure REST API endpoints to expose the processed user performance data and skill estimates to the frontend dashboard.",
+            "dependencies": [
+              3
+            ],
+            "details": "Develop endpoints such as `GET /api/users/{userId}/analytics/trends` to provide time-series data for performance graphs, and `GET /api/users/{userId}/analytics/skills` to provide the latest skill estimates for radar charts. Ensure endpoints are authenticated and authorized.",
+            "status": "done",
+            "testStrategy": "API contract testing to validate request/response schemas. Integration tests to ensure the endpoints retrieve and format data correctly from the analytics summary tables. Security tests for access control."
+          },
+          {
+            "id": 5,
+            "title": "Define and Validate API Data Structures for Visualization",
+            "description": "Finalize the JSON data structures returned by the API endpoints, ensuring they are optimized for direct consumption by frontend charting libraries like Chart.js and D3.js.",
+            "dependencies": [
+              4
+            ],
+            "details": "The API response for the skill radar chart should be an array of objects with 'skill' and 'score' keys. The response for performance trends should be an array of [timestamp, value] pairs. This minimizes data transformation on the client side. Document the final API specifications.",
+            "status": "done",
+            "testStrategy": "End-to-end tests where a mock client fetches data from the API and validates that the structure is correct and can be rendered by a sample Chart.js/D3.js component without errors."
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Build Personalized Problem Recommendation Engine",
+        "description": "Build an AI-powered recommendation system to suggest optimal problems to users based on their skill and history.",
+        "details": "Implement a hybrid model combining collaborative filtering (matrix factorization) and content-based approaches. Use deep learning embeddings to match users with problems based on skill level, history, and learning objectives.",
+        "testStrategy": "Offline evaluation of the recommendation model using historical data (precision, recall). A/B testing with a control group to measure the effectiveness of recommendations on user engagement and skill improvement.",
+        "priority": "medium",
+        "dependencies": [
+          7
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Data Pipeline and Feature Engineering for Recommendation Model",
+            "description": "Establish a data pipeline to collect, clean, and process user interaction data (submissions, success rates, solve times) and problem metadata (topics, difficulty). Engineer features for user skill profiles and problem characteristics.",
+            "dependencies": [],
+            "details": "Create a data pipeline to aggregate data from the production database, including user performance metrics from Task 7. Extract and pre-process features such as user success rate per topic, problem difficulty, and problem tags. Structure the data into a user-item interaction matrix and feature sets suitable for model training.",
+            "status": "done",
+            "testStrategy": "Data validation tests to ensure integrity, completeness, and correct feature calculation. Schema validation for the final processed datasets."
+          },
+          {
+            "id": 2,
+            "title": "Implement Content-Based Filtering using Deep Learning Embeddings",
+            "description": "Develop and train a deep learning model to generate dense vector embeddings for users and problems based on their content features, such as user skill profiles, problem topics, and difficulty levels.",
+            "dependencies": [
+              1
+            ],
+            "details": "Use a neural network architecture (e.g., MLP) to learn embeddings for users and problems. User embeddings will be derived from their skill profile and historical performance. Problem embeddings will be based on their metadata (tags, difficulty, text). The model will be trained to predict the likelihood of a user successfully solving a problem.",
+            "status": "done",
+            "testStrategy": "Offline evaluation of embedding quality using t-SNE visualization and calculating cosine similarity for known related problems. Evaluate model's predictive accuracy on a held-out dataset."
+          },
+          {
+            "id": 3,
+            "title": "Implement Collaborative Filtering using Matrix Factorization",
+            "description": "Build a collaborative filtering model using a matrix factorization algorithm (e.g., SVD or ALS) to capture latent user preferences and item characteristics from the user-problem interaction data.",
+            "dependencies": [
+              1
+            ],
+            "details": "Apply a matrix factorization algorithm like Singular Value Decomposition (SVD) to the user-problem interaction matrix. This will generate latent factor vectors for each user and problem, capturing patterns not explicitly present in the feature data.",
+            "status": "done",
+            "testStrategy": "Evaluate the model's predictive accuracy using offline metrics like Root Mean Squared Error (RMSE) on a held-out test set of historical user-problem interactions."
+          },
+          {
+            "id": 4,
+            "title": "Develop Hybrid Model and Final Ranking Logic",
+            "description": "Combine the outputs from the content-based and collaborative filtering models to create a unified hybrid recommendation system. Implement a final ranking function to generate a sorted list of problems.",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Implement a feature-stacking approach where the embeddings and scores from the content-based and collaborative filtering models are used as input features for a final learning-to-rank model (e.g., LightGBM). This model will produce the final ranked list of problem recommendations for each user.",
+            "status": "done",
+            "testStrategy": "Offline evaluation of the hybrid model using ranking metrics like precision@k, recall@k, and nDCG@k. Compare performance against the individual CF and CB models to justify the hybrid approach."
+          },
+          {
+            "id": 5,
+            "title": "Create Recommendation Service API and Integrate with Application",
+            "description": "Expose the trained hybrid recommendation model via a REST API endpoint and integrate this service with the user-facing application to display personalized problem suggestions.",
+            "dependencies": [
+              4
+            ],
+            "details": "Develop a microservice that loads the trained hybrid model and exposes an endpoint like `GET /users/{userId}/recommendations`. This service will generate recommendations in real-time or from a pre-computed cache. Integrate this API with the frontend to display suggestions on the user dashboard.",
+            "status": "done",
+            "testStrategy": "API endpoint testing for latency, throughput, and correctness of the response format. End-to-end testing to ensure recommendations are correctly fetched and displayed. Prepare for A/B testing by implementing logic to serve different recommendation strategies."
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Enhance Judge System Security and Scalability",
+        "description": "Harden the security of the code execution environment and prepare the infrastructure for large-scale traffic, as part of Phase 4.",
+        "details": "Implement a dual-layer sandbox (Isolate + Docker). Enforce resource limits with cgroups, disk quotas, and use seccomp-bpf for system call filtering. Configure horizontal scaling for judge workers using Kubernetes with auto-scaling policies based on queue depth.",
+        "testStrategy": "Penetration testing against the sandbox environment. Load testing to verify auto-scaling functionality and determine the maximum concurrent submission throughput while maintaining sub-5-second execution times.",
+        "priority": "low",
+        "dependencies": [
+          3
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Containerize Judge Worker and Implement Dual-Layer Sandbox",
+            "description": "Create a Docker image for the judge worker, establishing the outer sandbox layer, and integrate it with the existing 'Isolate' sandbox to form a dual-layer security environment.",
+            "dependencies": [],
+            "details": "Develop a multi-stage Dockerfile to build the Go worker binary and install all dependencies, including the 'Isolate' binary. The final container will run the judge worker, which in turn invokes 'Isolate' for code execution. This encapsulates the entire execution environment.",
+            "status": "done",
+            "testStrategy": "Build the Docker image and run it locally. Submit a test job to verify the worker inside the container can connect to the Redis queue and correctly use 'Isolate' to execute the code."
+          },
+          {
+            "id": 2,
+            "title": "Implement Seccomp-bpf Filtering and Disk Quotas",
+            "description": "Harden the inner sandbox by defining and applying strict system call filters using seccomp-bpf and enforcing per-submission disk quotas.",
+            "dependencies": [],
+            "details": "For each supported language, research and create a seccomp-bpf profile that whitelists only the essential system calls. Integrate these profiles into the judge logic to be applied by 'Isolate' during execution. Configure filesystem-level or 'Isolate' parameters to enforce a strict disk space limit for the temporary execution directory.",
+            "status": "done",
+            "testStrategy": "Create test submissions that attempt to use forbidden system calls (e.g., network, fork). Verify these submissions are terminated with an appropriate error. Create a test that attempts to write a large file to disk and verify it fails due to the quota."
+          },
+          {
+            "id": 3,
+            "title": "Provision Kubernetes Cluster and Container Registry",
+            "description": "Set up the foundational Kubernetes infrastructure and a private container registry to host the scalable judge worker deployment.",
+            "dependencies": [
+              1
+            ],
+            "details": "Provision a managed Kubernetes cluster (e.g., GKE, EKS, AKS). Configure cluster access controls and networking. Set up a private container registry (e.g., GCR, ECR) and push the judge worker Docker image to it. Grant the Kubernetes cluster permissions to pull images from this registry.",
+            "status": "done",
+            "testStrategy": "Verify cluster connectivity using `kubectl`. Manually deploy a single pod using the judge worker image from the private registry to confirm the cluster can schedule it and pull the image successfully."
+          },
+          {
+            "id": 4,
+            "title": "Configure Horizontal Pod Autoscaler (HPA) for Judge Workers",
+            "description": "Deploy the judge workers on Kubernetes and configure auto-scaling policies to dynamically adjust the number of workers based on submission queue depth.",
+            "dependencies": [
+              3
+            ],
+            "details": "Create Kubernetes Deployment manifests for the judge worker. Install and configure a metrics server or adapter (e.g., KEDA) to expose the Asynq/Redis queue length as a custom metric. Define an HPA resource that targets the worker deployment, configured to scale the number of pods up or down based on the queue depth metric.",
+            "status": "done",
+            "testStrategy": "Generate a moderate load on the submission queue and verify that the HPA increases the number of worker pods. After the queue is processed, verify that the number of pods scales back down to the configured minimum."
+          },
+          {
+            "id": 5,
+            "title": "Perform Penetration and Load Testing on the Enhanced Judge System",
+            "description": "Conduct comprehensive security and performance testing to validate the effectiveness of the sandbox and the reliability of the auto-scaling infrastructure.",
+            "dependencies": [
+              2,
+              4
+            ],
+            "details": "Develop a suite of malicious code samples to test for sandbox escapes, resource limit violations, and seccomp filter bypasses. Use a load testing tool (e.g., Locust, k6) to simulate a high volume of concurrent submissions to measure maximum throughput and verify that execution times remain within the sub-5-second target under load.",
+            "status": "done",
+            "testStrategy": "Penetration tests should confirm that no malicious sample can escape the dual-layer sandbox. Load tests will measure the maximum submissions-per-minute and confirm the HPA correctly manages resources to maintain performance targets."
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Set Up Comprehensive Monitoring and Observability",
+        "description": "Set up a full monitoring, logging, and alerting stack to ensure system reliability, performance, and 99.9% uptime.",
+        "details": "Integrate Prometheus and Grafana for system metrics (API latency <100ms, error rates, resource usage). Use OpenTelemetry for distributed tracing across services. Configure real-time alerts for critical issues like high latency or submission queue backup.",
+        "testStrategy": "Validate that metrics are correctly collected and displayed in Grafana dashboards. Trigger alerts intentionally to test the notification pipeline. Review logs during load tests to identify performance bottlenecks.",
+        "priority": "low",
+        "dependencies": [
+          1,
+          3
+        ],
+        "status": "in-progress",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Deploy and Configure Prometheus & Grafana Stack",
+            "description": "Set up the foundational infrastructure for metrics collection and visualization by deploying Prometheus for data scraping and Grafana for dashboarding.",
+            "dependencies": [],
+            "details": "Deploy Prometheus and Grafana instances using a containerized setup (e.g., Docker Compose or Kubernetes). Configure the Prometheus data source within Grafana. Establish initial service discovery configurations for Prometheus to find and scrape targets.",
+            "status": "done",
+            "testStrategy": "Verify that both Prometheus and Grafana web UIs are accessible. Confirm that Grafana can successfully connect to and query the Prometheus data source. Check that Prometheus is scraping its own internal metrics."
+          },
+          {
+            "id": 2,
+            "title": "Instrument Core Services for Metrics Exposure",
+            "description": "Integrate Prometheus client libraries into the core GoLang backend and Judge worker services to expose key application and system metrics.",
+            "dependencies": [
+              1
+            ],
+            "details": "Add the appropriate Prometheus client library to the GoLang services. Instrument the code to expose a `/metrics` endpoint. Track key metrics such as API request latency, error rates, request counts, and submission queue size (from Asynq). Update Prometheus scrape configurations to target these new endpoints.",
+            "status": "done",
+            "testStrategy": "Curl the `/metrics` endpoint of a running service to ensure metrics are being exposed in the correct format. Verify in the Prometheus UI that the service targets are 'UP' and that data is being scraped successfully."
+          },
+          {
+            "id": 3,
+            "title": "Integrate OpenTelemetry for Distributed Tracing",
+            "description": "Instrument all services with the OpenTelemetry SDK to generate and propagate traces, providing end-to-end visibility for requests across the distributed system.",
+            "dependencies": [
+              2
+            ],
+            "details": "Integrate the OpenTelemetry SDK into the GoLang backend and Judge worker services. Configure an OTel collector to receive trace data and export it to a compatible backend (e.g., Jaeger, Grafana Tempo). Ensure trace context is propagated across API calls and through the Asynq message queue.",
+            "status": "done",
+            "testStrategy": "Trigger a full code submission and verify that a complete, unified trace appears in the tracing backend, showing the request flow from the API gateway through the backend service and the judge worker."
+          },
+          {
+            "id": 4,
+            "title": "Build System Performance Dashboards in Grafana",
+            "description": "Design and build comprehensive Grafana dashboards to visualize the key performance indicators (KPIs) and traces collected from the services.",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Create a primary 'System Overview' dashboard in Grafana. Add panels to visualize critical metrics like API latency (p95/p99), error rates, resource usage (CPU/Memory), and submission queue depth. Create a separate panel or dashboard to visualize distributed traces, linking them to logs and metrics.",
+            "status": "in-progress",
+            "testStrategy": "Review the created dashboards under normal load to ensure all panels are populated with accurate, real-time data. Manually cross-reference dashboard values with direct queries in Prometheus to validate correctness."
+          },
+          {
+            "id": 5,
+            "title": "Configure Real-Time Alerting with Alertmanager",
+            "description": "Set up Prometheus Alertmanager to send proactive, real-time notifications for critical issues based on predefined alerting rules.",
+            "dependencies": [
+              4
+            ],
+            "details": "Deploy and configure Prometheus Alertmanager. Define alerting rules in a Prometheus configuration file for critical thresholds, such as API latency exceeding 100ms, a significant increase in error rates, or the submission queue backing up beyond a set limit. Configure Alertmanager to route these alerts to a notification channel (e.g., Slack or PagerDuty).",
+            "status": "pending",
+            "testStrategy": "Intentionally trigger an alert condition (e.g., by introducing a delay in an API endpoint or pushing many tasks to the queue). Verify that the alert transitions to a 'firing' state in Prometheus and that a notification is successfully delivered to the configured channel via Alertmanager."
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "created": "2025-07-18T13:29:55.647Z",
+      "updated": "2025-07-20T17:03:15.097Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

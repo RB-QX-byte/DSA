@@ -1,0 +1,220 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+
+// Sample editorial data (in a real app, this would come from an API)
+const editorials = [
+  {
+    id: 1,
+    slug: 'two-sum',
+    title: 'Two Sum - Hash Table Approach',
+    difficulty: 'Easy',
+    difficultyColor: 'text-success',
+    tags: ['Array', 'Hash Table'],
+    readTime: '5 min read',
+    author: 'CodeArena Team',
+    publishedAt: '2024-01-15',
+    description: 'Learn how to solve the Two Sum problem efficiently using hash tables with O(n) time complexity.',
+    views: 1250
+  },
+  {
+    id: 2,
+    slug: 'maximum-subarray',
+    title: 'Maximum Subarray - Kadane\'s Algorithm',
+    difficulty: 'Medium',
+    difficultyColor: 'text-warning',
+    tags: ['Array', 'Dynamic Programming'],
+    readTime: '8 min read',
+    author: 'CodeArena Team',
+    publishedAt: '2024-01-12',
+    description: 'Master Kadane\'s algorithm and understand the dynamic programming approach to finding maximum subarray sum.',
+    views: 980
+  },
+  {
+    id: 3,
+    slug: 'binary-tree-inorder-traversal',
+    title: 'Binary Tree Inorder Traversal - Recursive & Iterative',
+    difficulty: 'Easy',
+    difficultyColor: 'text-success',
+    tags: ['Tree', 'Stack', 'Recursion'],
+    readTime: '6 min read',
+    author: 'CodeArena Team',
+    publishedAt: '2024-01-10',
+    description: 'Explore both recursive and iterative approaches for binary tree inorder traversal with detailed explanations.',
+    views: 750
+  },
+  {
+    id: 4,
+    slug: 'merge-intervals',
+    title: 'Merge Intervals - Sorting and Merging Strategy',
+    difficulty: 'Medium',
+    difficultyColor: 'text-warning',
+    tags: ['Array', 'Sorting'],
+    readTime: '7 min read',
+    author: 'CodeArena Team',
+    publishedAt: '2024-01-08',
+    description: 'Learn the efficient sorting-based approach to merge overlapping intervals with clear examples.',
+    views: 640
+  },
+  {
+    id: 5,
+    slug: 'word-ladder',
+    title: 'Word Ladder - BFS and Graph Theory',
+    difficulty: 'Hard',
+    difficultyColor: 'text-danger',
+    tags: ['Hash Table', 'String', 'BFS'],
+    readTime: '12 min read',
+    author: 'CodeArena Team',
+    publishedAt: '2024-01-05',
+    description: 'Understand how to model word transformation as a graph problem and solve using BFS.',
+    views: 420
+  },
+  {
+    id: 6,
+    slug: 'reverse-linked-list',
+    title: 'Reverse Linked List - Iterative vs Recursive',
+    difficulty: 'Easy',
+    difficultyColor: 'text-success',
+    tags: ['Linked List', 'Recursion'],
+    readTime: '4 min read',
+    author: 'CodeArena Team',
+    publishedAt: '2024-01-03',
+    description: 'Compare iterative and recursive approaches to reverse a linked list with step-by-step visualization.',
+    views: 890
+  }
+];
+
+const formatDate = (dateStr) => {
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+};
+---
+
+<MainLayout title="Editorials" description="In-depth explanations and solutions for competitive programming problems.">
+  <div class="container py-8">
+    <!-- Page Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl md:text-4xl font-bold mb-4">Editorials</h1>
+      <p class="text-secondary text-lg">
+        In-depth explanations and optimal solutions for competitive programming problems.
+      </p>
+    </div>
+    
+    <!-- Filters -->
+    <div class="mb-6 flex flex-col sm:flex-row gap-4 items-center justify-between">
+      <div class="flex flex-wrap gap-2">
+        <button class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors">
+          All
+        </button>
+        <button class="px-4 py-2 bg-secondary text-secondary hover:bg-tertiary transition-colors">
+          Easy
+        </button>
+        <button class="px-4 py-2 bg-secondary text-secondary hover:bg-tertiary transition-colors">
+          Medium
+        </button>
+        <button class="px-4 py-2 bg-secondary text-secondary hover:bg-tertiary transition-colors">
+          Hard
+        </button>
+      </div>
+      
+      <div class="flex gap-2">
+        <button class="px-4 py-2 bg-secondary text-secondary rounded-lg hover:bg-tertiary transition-colors">
+          Latest
+        </button>
+        <button class="px-4 py-2 bg-secondary text-secondary rounded-lg hover:bg-tertiary transition-colors">
+          Popular
+        </button>
+      </div>
+    </div>
+    
+    <!-- Editorials Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {editorials.map((editorial) => (
+        <article class="bg-primary border border-primary rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+          <div class="p-6">
+            <!-- Header -->
+            <div class="flex items-center gap-2 mb-3">
+              <span class={`px-2 py-1 text-xs font-medium rounded ${editorial.difficultyColor}`}>
+                {editorial.difficulty}
+              </span>
+              <span class="text-xs text-secondary">
+                {editorial.readTime}
+              </span>
+            </div>
+            
+            <!-- Title -->
+            <h2 class="text-xl font-semibold mb-3 line-clamp-2">
+              <a href={`/editorials/${editorial.slug}`} class="hover:text-primary transition-colors">
+                {editorial.title}
+              </a>
+            </h2>
+            
+            <!-- Description -->
+            <p class="text-secondary text-sm mb-4 line-clamp-3">
+              {editorial.description}
+            </p>
+            
+            <!-- Tags -->
+            <div class="flex flex-wrap gap-2 mb-4">
+              {editorial.tags.map((tag) => (
+                <span class="px-2 py-1 bg-secondary text-secondary text-xs rounded">
+                  {tag}
+                </span>
+              ))}
+            </div>
+            
+            <!-- Footer -->
+            <div class="flex items-center justify-between text-xs text-secondary">
+              <div class="flex items-center gap-4">
+                <span>By {editorial.author}</span>
+                <span>{formatDate(editorial.publishedAt)}</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+                <span>{editorial.views}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Read More Button -->
+          <div class="px-6 pb-6">
+            <a 
+              href={`/editorials/${editorial.slug}`} 
+              class="block w-full text-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
+            >
+              Read Editorial
+            </a>
+          </div>
+        </article>
+      ))}
+    </div>
+    
+    <!-- Load More -->
+    <div class="mt-8 text-center">
+      <button class="px-6 py-3 bg-secondary text-primary rounded-lg hover:bg-tertiary transition-colors">
+        Load More Editorials
+      </button>
+    </div>
+  </div>
+</MainLayout>
+
+<style>
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style>

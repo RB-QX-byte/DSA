@@ -1,0 +1,422 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: load-test-config
+  namespace: security-testing
+  labels:
+    component: load-testing
+data:
+  k6-load-test.js: |
+    import http from 'k6/http';
+    import { check, sleep } from 'k6';
+    import { Rate, Trend } from 'k6/metrics';
+    
+    // Custom metrics
+    const errorRate = new Rate('errors');
+    const judgeResponseTime = new Trend('judge_response_time');
+    
+    // Test configuration
+    export const options = {
+      stages: [
+        { duration: '2m', target: 10 },   // Ramp up
+        { duration: '5m', target: 50 },   // Load test
+        { duration: '2m', target: 100 },  // Spike test
+        { duration: '5m', target: 100 },  // Sustained load
+        { duration: '2m', target: 0 },    // Ramp down
+      ],
+      thresholds: {
+        http_req_duration: ['p(95)<2000'], // 95% of requests under 2s
+        http_req_failed: ['rate<0.05'],     // Error rate under 5%
+        judge_response_time: ['p(95)<5000'], // Judge response under 5s
+      },
+    };
+    
+    // Test data
+    const testCodes = [
+      {
+        language: 'cpp',
+        code: `
+          #include <iostream>
+          using namespace std;
+          int main() {
+              int a, b;
+              cin >> a >> b;
+              cout << a + b << endl;
+              return 0;
+          }
+        `,
+        input: '5 3',
+        expected: '8'
+      },
+      {
+        language: 'python',
+        code: `
+          a, b = map(int, input().split())
+          print(a + b)
+        `,
+        input: '10 20',
+        expected: '30'
+      },
+      {
+        language: 'java',
+        code: `
+          import java.util.Scanner;
+          public class Main {
+              public static void main(String[] args) {
+                  Scanner sc = new Scanner(System.in);
+                  int a = sc.nextInt();
+                  int b = sc.nextInt();
+                  System.out.println(a + b);
+              }
+          }
+        `,
+        input: '7 13',
+        expected: '20'
+      }
+    ];
+    
+    export default function() {
+      // Select random test case
+      const testCase = testCodes[Math.floor(Math.random() * testCodes.length)];
+      
+      // Submit code for judging
+      const submitResponse = http.post('http://judge-worker-service.competitive-programming.svc:8081/submit', {
+        language: testCase.language,
+        code: testCase.code,
+        input: testCase.input,
+        problem_id: 'load-test-problem',
+        user_id: `load-test-user-${__VU}`,
+        time_limit: 1000,
+        memory_limit: 128
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: '30s',
+      });
+      
+      const submitSuccess = check(submitResponse, {
+        'submission accepted': (r) => r.status === 202 || r.status === 200,
+        'submission response time OK': (r) => r.timings.duration < 2000,
+      });
+      
+      errorRate.add(!submitSuccess);
+      
+      if (submitSuccess && submitResponse.json('submission_id')) {
+        const submissionId = submitResponse.json('submission_id');
+        
+        // Poll for result
+        let attempts = 0;
+        let judgeResult;
+        
+        while (attempts < 30) { // Max 30 attempts (30 seconds)
+          sleep(1);
+          attempts++;
+          
+          const statusResponse = http.get(
+            `http://judge-worker-service.competitive-programming.svc:8081/status/${submissionId}`,
+            { timeout: '5s' }
+          );
+          
+          if (statusResponse.status === 200) {
+            judgeResult = statusResponse.json();
+            
+            if (judgeResult.status !== 'PENDING' && judgeResult.status !== 'JUDGING') {
+              judgeResponseTime.add(attempts * 1000); // Convert to milliseconds
+              break;
+            }
+          }
+        }
+        
+        // Validate result
+        if (judgeResult) {
+          check(judgeResult, {
+            'judge completed': (r) => r.status !== 'PENDING' && r.status !== 'JUDGING',
+            'judge response valid': (r) => ['AC', 'WA', 'TLE', 'MLE', 'RE', 'CE'].includes(r.status),
+          });
+        }
+      }
+      
+      sleep(Math.random() * 3 + 1); // Random sleep 1-4 seconds
+    }
+  
+  stress-test.js: |
+    import http from 'k6/http';
+    import { check, sleep } from 'k6';
+    
+    export const options = {
+      scenarios: {
+        // High concurrent submissions
+        high_load: {
+          executor: 'constant-vus',
+          vus: 200,
+          duration: '10m',
+        },
+        // Burst traffic simulation
+        burst_load: {
+          executor: 'ramping-arrival-rate',
+          startRate: 0,
+          timeUnit: '1s',
+          preAllocatedVUs: 50,
+          maxVUs: 300,
+          stages: [
+            { target: 100, duration: '1m' },
+            { target: 500, duration: '2m' },
+            { target: 100, duration: '1m' },
+          ],
+        },
+      },
+      thresholds: {
+        http_req_duration: ['p(99)<10000'], // 99% under 10s
+        http_req_failed: ['rate<0.1'],      // Error rate under 10%
+      },
+    };
+    
+    // Malicious code attempts (should be blocked)
+    const maliciousCodes = [
+      {
+        language: 'cpp',
+        code: `
+          #include <iostream>
+          #include <fstream>
+          using namespace std;
+          int main() {
+              ofstream file("/etc/passwd");
+              file << "hacked" << endl;
+              return 0;
+          }
+        `,
+        description: 'File system access attempt'
+      },
+      {
+        language: 'cpp',
+        code: `
+          #include <iostream>
+          #include <unistd.h>
+          using namespace std;
+          int main() {
+              system("rm -rf /");
+              return 0;
+          }
+        `,
+        description: 'System command execution attempt'
+      },
+      {
+        language: 'cpp',
+        code: `
+          #include <iostream>
+          using namespace std;
+          int main() {
+              while(true) {
+                  new int[1000000];
+              }
+              return 0;
+          }
+        `,
+        description: 'Memory exhaustion attempt'
+      },
+      {
+        language: 'cpp',
+        code: `
+          #include <iostream>
+          #include <sys/socket.h>
+          using namespace std;
+          int main() {
+              int sock = socket(AF_INET, SOCK_STREAM, 0);
+              return 0;
+          }
+        `,
+        description: 'Network access attempt'
+      }
+    ];
+    
+    export default function() {
+      if (Math.random() < 0.1) { // 10% malicious submissions
+        const maliciousCode = maliciousCodes[Math.floor(Math.random() * maliciousCodes.length)];
+        
+        const response = http.post('http://judge-worker-service.competitive-programming.svc:8081/submit', {
+          language: maliciousCode.language,
+          code: maliciousCode.code,
+          input: '',
+          problem_id: 'security-test',
+          user_id: `security-test-${__VU}`,
+          time_limit: 1000,
+          memory_limit: 128
+        });
+        
+        // Should be rejected or result in RE/TLE/MLE
+        check(response, {
+          'malicious code handled': (r) => r.status < 500,
+        });
+        
+      } else { // Normal submissions
+        const response = http.post('http://judge-worker-service.competitive-programming.svc:8081/submit', {
+          language: 'cpp',
+          code: '#include <iostream>\nusing namespace std;\nint main() { cout << "Hello" << endl; return 0; }',
+          input: '',
+          problem_id: 'stress-test',
+          user_id: `stress-test-${__VU}`,
+          time_limit: 1000,
+          memory_limit: 128
+        });
+        
+        check(response, {
+          'normal submission accepted': (r) => r.status === 200 || r.status === 202,
+        });
+      }
+      
+      sleep(0.5);
+    }
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: load-test-runner
+  namespace: security-testing
+  labels:
+    component: load-testing
+    test-type: performance
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        component: load-testing
+        test-type: performance
+    spec:
+      restartPolicy: Never
+      
+      containers:
+      - name: k6-runner
+        image: grafana/k6:latest
+        imagePullPolicy: Always
+        
+        command: ["k6"]
+        args: ["run", "--out", "json=/results/load-test-results.json", "/scripts/k6-load-test.js"]
+        
+        resources:
+          requests:
+            cpu: 1000m
+            memory: 2Gi
+          limits:
+            cpu: 4000m
+            memory: 8Gi
+        
+        volumeMounts:
+        - name: test-scripts
+          mountPath: /scripts
+          readOnly: true
+        - name: results
+          mountPath: /results
+      
+      volumes:
+      - name: test-scripts
+        configMap:
+          name: load-test-config
+      - name: results
+        emptyDir: {}
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: stress-test-runner
+  namespace: security-testing
+  labels:
+    component: load-testing
+    test-type: stress
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        component: load-testing
+        test-type: stress
+    spec:
+      restartPolicy: Never
+      
+      containers:
+      - name: k6-stress-runner
+        image: grafana/k6:latest
+        imagePullPolicy: Always
+        
+        command: ["k6"]
+        args: ["run", "--out", "json=/results/stress-test-results.json", "/scripts/stress-test.js"]
+        
+        resources:
+          requests:
+            cpu: 2000m
+            memory: 4Gi
+          limits:
+            cpu: 8000m
+            memory: 16Gi
+        
+        volumeMounts:
+        - name: test-scripts
+          mountPath: /scripts
+          readOnly: true
+        - name: results
+          mountPath: /results
+      
+      volumes:
+      - name: test-scripts
+        configMap:
+          name: load-test-config
+      - name: results
+        emptyDir: {}
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: scheduled-load-test
+  namespace: security-testing
+  labels:
+    component: load-testing
+    test-type: scheduled
+spec:
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          
+          containers:
+          - name: k6-scheduled-runner
+            image: grafana/k6:latest
+            imagePullPolicy: Always
+            
+            command: ["k6"]
+            args: 
+            - run
+            - --out
+            - json=/results/scheduled-test-results.json
+            - --out
+            - influxdb=http://influxdb.competitive-programming-monitoring.svc:8086/k6
+            - /scripts/k6-load-test.js
+            
+            resources:
+              requests:
+                cpu: 1000m
+                memory: 2Gi
+              limits:
+                cpu: 4000m
+                memory: 8Gi
+            
+            volumeMounts:
+            - name: test-scripts
+              mountPath: /scripts
+              readOnly: true
+            - name: results
+              mountPath: /results
+          
+          volumes:
+          - name: test-scripts
+            configMap:
+              name: load-test-config
+          - name: results
+            emptyDir: {}

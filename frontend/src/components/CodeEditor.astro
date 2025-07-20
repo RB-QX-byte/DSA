@@ -1,0 +1,674 @@
+---
+export interface Props {
+  id?: string;
+  defaultValue?: string;
+  language?: string;
+  theme?: 'vs-dark' | 'light' | 'hc-black';
+  height?: string;
+  width?: string;
+  readOnly?: boolean;
+  class?: string;
+  showLanguageSelector?: boolean;
+  supportedLanguages?: string[];
+}
+
+const { 
+  id = 'code-editor',
+  defaultValue = '',
+  language = 'javascript',
+  theme = 'vs-dark',
+  height = '400px',
+  width = '100%',
+  readOnly = false,
+  class: className = '',
+  showLanguageSelector = false,
+  supportedLanguages = ['javascript', 'typescript', 'python', 'java', 'cpp', 'csharp', 'go', 'rust', 'html', 'css', 'json', 'xml', 'yaml', 'markdown']
+} = Astro.props;
+---
+
+{showLanguageSelector && (
+  <div class="editor-toolbar">
+    <label for={`${id}-language-select`} class="language-label">Language:</label>
+    <select id={`${id}-language-select`} class="language-selector" data-editor-id={id}>
+      {supportedLanguages.map(lang => (
+        <option value={lang} selected={lang === language}>
+          {lang.charAt(0).toUpperCase() + lang.slice(1)}
+        </option>
+      ))}
+    </select>
+  </div>
+)}
+
+<div 
+  id={id}
+  class={`monaco-editor-container ${className}`}
+  data-language={language}
+  data-theme={theme}
+  data-readonly={readOnly}
+  data-default-value={defaultValue}
+  data-supported-languages={JSON.stringify(supportedLanguages)}
+  style={`height: ${height}; width: ${width};`}
+>
+  <div class="editor-loading">
+    <div class="loading-spinner"></div>
+    <p>Loading code editor...</p>
+  </div>
+</div>
+
+<style>
+  .editor-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+
+  .language-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+  }
+
+  .language-selector {
+    padding: 4px 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    background: #ffffff;
+    font-size: 14px;
+    color: #374151;
+    cursor: pointer;
+  }
+
+  .language-selector:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  }
+
+  .monaco-editor-container {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    background: #1e1e1e;
+  }
+
+  .editor-toolbar + .monaco-editor-container {
+    border-radius: 0 0 8px 8px;
+    border-top: none;
+  }
+
+  .editor-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #9ca3af;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+
+  .loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid #374151;
+    border-top: 3px solid #60a5fa;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 12px;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .monaco-editor-container[data-theme="light"] {
+    background: #ffffff;
+    border-color: #d1d5db;
+  }
+
+  .monaco-editor-container[data-theme="light"] .editor-loading {
+    color: #6b7280;
+  }
+
+  .monaco-editor-container[data-theme="light"] .loading-spinner {
+    border-color: #e5e7eb;
+    border-top-color: #3b82f6;
+  }
+
+  /* Mobile responsive adjustments */
+  @media (max-width: 768px) {
+    .monaco-editor-container {
+      border-radius: 4px;
+    }
+    
+    .editor-toolbar {
+      padding: 6px 8px;
+      border-radius: 4px 4px 0 0;
+    }
+    
+    .language-selector {
+      padding: 6px 8px;
+      font-size: 16px; /* Prevents zoom on iOS */
+      border-radius: 6px;
+    }
+    
+    .language-label {
+      font-size: 13px;
+    }
+  }
+
+  /* Touch-friendly enhancements */
+  @media (hover: none) and (pointer: coarse) {
+    .monaco-editor-container {
+      /* Ensure touch scrolling works smoothly */
+      -webkit-overflow-scrolling: touch;
+      overflow: auto;
+    }
+    
+    .language-selector {
+      min-height: 44px; /* iOS touch target minimum */
+      padding: 8px 12px;
+    }
+    
+    .editor-toolbar {
+      min-height: 44px;
+      align-items: center;
+    }
+  }
+
+  /* Tablet adjustments */
+  @media (min-width: 769px) and (max-width: 1024px) {
+    .monaco-editor-container {
+      border-radius: 6px;
+    }
+  }
+
+  /* Ultra-small screens */
+  @media (max-width: 480px) {
+    .editor-toolbar {
+      flex-wrap: wrap;
+      gap: 4px;
+      padding: 4px 6px;
+    }
+    
+    .language-label {
+      width: 100%;
+      font-size: 12px;
+      margin-bottom: 2px;
+    }
+    
+    .language-selector {
+      width: 100%;
+      font-size: 16px;
+    }
+  }
+</style>
+
+<script>
+  import * as monaco from 'monaco-editor';
+
+  // Language mappings for Monaco Editor
+  const languageMap = {
+    'javascript': 'javascript',
+    'typescript': 'typescript',
+    'python': 'python',
+    'java': 'java',
+    'cpp': 'cpp',
+    'c++': 'cpp',
+    'csharp': 'csharp',
+    'c#': 'csharp',
+    'go': 'go',
+    'rust': 'rust',
+    'html': 'html',
+    'css': 'css',
+    'scss': 'scss',
+    'json': 'json',
+    'xml': 'xml',
+    'yaml': 'yaml',
+    'yml': 'yaml',
+    'markdown': 'markdown',
+    'md': 'markdown',
+    'sql': 'sql',
+    'php': 'php',
+    'ruby': 'ruby',
+    'shell': 'shell',
+    'bash': 'shell',
+    'dockerfile': 'dockerfile'
+  };
+
+  // Custom themes configuration
+  const customThemes = {
+    'contest-dark': {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        { token: 'comment', foreground: '6A9955' },
+        { token: 'keyword', foreground: '569CD6' },
+        { token: 'string', foreground: 'CE9178' },
+        { token: 'number', foreground: 'B5CEA8' },
+        { token: 'function', foreground: 'DCDCAA' },
+        { token: 'type', foreground: '4EC9B0' },
+      ],
+      colors: {
+        'editor.background': '#0D1117',
+        'editor.foreground': '#E6EDF3',
+        'editorLineNumber.foreground': '#6E7681',
+        'editor.selectionBackground': '#264F78',
+        'editor.lineHighlightBackground': '#161B22'
+      }
+    }
+  };
+
+  // Custom completion providers for competitive programming
+  const setupCompletionProviders = (editor, language) => {
+    const model = editor.getModel();
+    if (!model) return;
+
+    // Common competitive programming snippets and completions
+    const completionItems = {
+      'cpp': [
+        {
+          label: 'competitive_template',
+          kind: monaco.languages.CompletionItemKind.Snippet,
+          insertText: [
+            '#include <iostream>',
+            '#include <vector>',
+            '#include <algorithm>',
+            '#include <string>',
+            '#include <map>',
+            '#include <set>',
+            '#include <queue>',
+            '#include <stack>',
+            '',
+            'using namespace std;',
+            '',
+            'int main() {',
+            '    ios_base::sync_with_stdio(false);',
+            '    cin.tie(NULL);',
+            '    ',
+            '    ${1:// Your code here}',
+            '    ',
+            '    return 0;',
+            '}'
+          ].join('\n'),
+          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+          documentation: 'Competitive programming C++ template',
+          range: null
+        },
+        {
+          label: 'fast_io',
+          kind: monaco.languages.CompletionItemKind.Snippet,
+          insertText: 'ios_base::sync_with_stdio(false);\ncin.tie(NULL);',
+          documentation: 'Fast I/O for competitive programming',
+          range: null
+        }
+      ],
+      'java': [
+        {
+          label: 'competitive_template',
+          kind: monaco.languages.CompletionItemKind.Snippet,
+          insertText: [
+            'import java.util.*;',
+            'import java.io.*;',
+            '',
+            'public class Solution {',
+            '    public static void main(String[] args) {',
+            '        Scanner sc = new Scanner(System.in);',
+            '        ${1:// Your code here}',
+            '        sc.close();',
+            '    }',
+            '}'
+          ].join('\n'),
+          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+          documentation: 'Competitive programming Java template',
+          range: null
+        }
+      ],
+      'python': [
+        {
+          label: 'competitive_template',
+          kind: monaco.languages.CompletionItemKind.Snippet,
+          insertText: [
+            'import sys',
+            'from collections import defaultdict, deque, Counter',
+            'from heapq import heappush, heappop',
+            'from bisect import bisect_left, bisect_right',
+            '',
+            'def solve():',
+            '    ${1:# Your code here}',
+            '    pass',
+            '',
+            'if __name__ == "__main__":',
+            '    solve()'
+          ].join('\n'),
+          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+          documentation: 'Competitive programming Python template',
+          range: null
+        },
+        {
+          label: 'fast_input',
+          kind: monaco.languages.CompletionItemKind.Snippet,
+          insertText: 'input = sys.stdin.readline',
+          documentation: 'Fast input for competitive programming',
+          range: null
+        }
+      ]
+    };
+
+    // Register completion provider for the current language
+    if (completionItems[language]) {
+      monaco.languages.registerCompletionItemProvider(language, {
+        provideCompletionItems: (model, position) => {
+          const suggestions = completionItems[language].map(item => ({
+            ...item,
+            range: {
+              startLineNumber: position.lineNumber,
+              endLineNumber: position.lineNumber,
+              startColumn: position.column,
+              endColumn: position.column
+            }
+          }));
+
+          return { suggestions };
+        }
+      });
+    }
+
+    // Add common algorithm snippets for all languages
+    const algorithmSnippets = {
+      'binary_search': {
+        cpp: 'int binary_search(vector<int>& arr, int target) {\n    int left = 0, right = arr.size() - 1;\n    while (left <= right) {\n        int mid = left + (right - left) / 2;\n        if (arr[mid] == target) return mid;\n        if (arr[mid] < target) left = mid + 1;\n        else right = mid - 1;\n    }\n    return -1;\n}',
+        python: 'def binary_search(arr, target):\n    left, right = 0, len(arr) - 1\n    while left <= right:\n        mid = (left + right) // 2\n        if arr[mid] == target:\n            return mid\n        elif arr[mid] < target:\n            left = mid + 1\n        else:\n            right = mid - 1\n    return -1',
+        java: 'public static int binarySearch(int[] arr, int target) {\n    int left = 0, right = arr.length - 1;\n    while (left <= right) {\n        int mid = left + (right - left) / 2;\n        if (arr[mid] == target) return mid;\n        if (arr[mid] < target) left = mid + 1;\n        else right = mid - 1;\n    }\n    return -1;\n}'
+      }
+    };
+
+    // Register algorithm snippets
+    if (algorithmSnippets.binary_search[language]) {
+      monaco.languages.registerCompletionItemProvider(language, {
+        provideCompletionItems: (model, position) => {
+          return {
+            suggestions: [{
+              label: 'binary_search',
+              kind: monaco.languages.CompletionItemKind.Function,
+              insertText: algorithmSnippets.binary_search[language],
+              documentation: 'Binary search algorithm implementation',
+              range: {
+                startLineNumber: position.lineNumber,
+                endLineNumber: position.lineNumber,
+                startColumn: position.column,
+                endColumn: position.column
+              }
+            }]
+          };
+        }
+      });
+    }
+  };
+
+  // Monaco Editor initialization configuration
+  const initializeMonacoEditor = () => {
+    // Get all Monaco editor containers
+    const editorContainers = document.querySelectorAll('.monaco-editor-container');
+
+    editorContainers.forEach(async (container) => {
+      const editorElement = container as HTMLElement;
+      let language = editorElement.dataset.language || 'javascript';
+      const theme = editorElement.dataset.theme || 'vs-dark';
+      const readOnly = editorElement.dataset.readonly === 'true';
+      const defaultValue = editorElement.dataset.defaultValue || '';
+      const supportedLanguages = JSON.parse(editorElement.dataset.supportedLanguages || '[]');
+
+      // Map language to Monaco's supported languages
+      language = languageMap[language.toLowerCase()] || language;
+
+      try {
+        // Configure Monaco environment for web workers
+        self.MonacoEnvironment = {
+          getWorkerUrl: function (moduleId, label) {
+            if (label === 'json') {
+              return './monaco-editor/min/vs/language/json/json.worker.js';
+            }
+            if (label === 'css' || label === 'scss' || label === 'less') {
+              return './monaco-editor/min/vs/language/css/css.worker.js';
+            }
+            if (label === 'html' || label === 'handlebars' || label === 'razor') {
+              return './monaco-editor/min/vs/language/html/html.worker.js';
+            }
+            if (label === 'typescript' || label === 'javascript') {
+              return './monaco-editor/min/vs/language/typescript/ts.worker.js';
+            }
+            return './monaco-editor/min/vs/editor/editor.worker.js';
+          }
+        };
+
+        // Register custom themes
+        Object.entries(customThemes).forEach(([themeName, themeData]) => {
+          monaco.editor.defineTheme(themeName, themeData);
+        });
+
+        // Clear loading state
+        editorElement.innerHTML = '';
+
+        // Create Monaco editor instance with enhanced IntelliSense
+        const editor = monaco.editor.create(editorElement, {
+          value: defaultValue,
+          language: language,
+          theme: theme,
+          readOnly: readOnly,
+          automaticLayout: true,
+          minimap: { enabled: window.innerWidth > 768 },
+          scrollBeyondLastLine: false,
+          fontSize: 14,
+          lineNumbers: 'on',
+          rulers: [],
+          folding: true,
+          lineDecorationsWidth: 10,
+          lineNumbersMinChars: 3,
+          glyphMargin: false,
+          scrollbar: {
+            verticalScrollbarSize: 8,
+            horizontalScrollbarSize: 8,
+          },
+          // Enhanced syntax highlighting options
+          bracketPairColorization: { enabled: true },
+          guides: {
+            bracketPairs: true,
+            indentation: true,
+          },
+          // Mobile-friendly options
+          mouseWheelZoom: false,
+          contextmenu: true,
+          selectOnLineNumbers: true,
+          smoothScrolling: true,
+          // Enhanced IntelliSense and completion features
+          suggestOnTriggerCharacters: true,
+          acceptSuggestionOnEnter: 'on',
+          tabCompletion: 'on',
+          wordBasedSuggestions: 'allDocuments',
+          quickSuggestions: {
+            other: true,
+            comments: false,
+            strings: false
+          },
+          suggestSelection: 'first',
+          wordWrap: 'on',
+          // Parameter hints and signature help
+          parameterHints: {
+            enabled: true,
+            cycle: true
+          },
+          // Hover information
+          hover: {
+            enabled: true,
+            delay: 300,
+            sticky: true
+          },
+          // Code lens features
+          codeLens: true,
+          // Auto-closing brackets and quotes
+          autoClosingBrackets: 'always',
+          autoClosingQuotes: 'always',
+          autoSurround: 'languageDefined',
+          // Format on paste and type
+          formatOnPaste: true,
+          formatOnType: true,
+        });
+
+        // Store editor instance on the container for external access
+        (editorElement as any).monacoEditor = editor;
+
+        // Setup custom completion providers for competitive programming
+        setupCompletionProviders(editor, language);
+
+        // Setup language selector if present
+        const languageSelector = document.querySelector(`[data-editor-id="${editorElement.id}"]`) as HTMLSelectElement;
+        if (languageSelector) {
+          languageSelector.addEventListener('change', (e) => {
+            const newLanguage = (e.target as HTMLSelectElement).value;
+            const mappedLanguage = languageMap[newLanguage.toLowerCase()] || newLanguage;
+            monaco.editor.setModelLanguage(editor.getModel()!, mappedLanguage);
+            editorElement.dataset.language = newLanguage;
+          });
+        }
+
+        // Handle responsive behavior
+        const handleResize = () => {
+          editor.updateOptions({
+            minimap: { enabled: window.innerWidth > 768 }
+          });
+          editor.layout();
+        };
+
+        window.addEventListener('resize', handleResize);
+
+        // Mobile touch enhancements
+        if ('ontouchstart' in window) {
+          editor.updateOptions({
+            mouseWheelZoom: false,
+            scrollbar: {
+              verticalScrollbarSize: 14, // Larger scrollbars for touch
+              horizontalScrollbarSize: 14,
+              useShadows: false,
+              verticalHasArrows: false,
+              horizontalHasArrows: false,
+              vertical: 'visible',
+              horizontal: 'visible',
+              handleMouseWheel: true,
+              arrowSize: 0
+            },
+            // Touch-friendly cursor and selection
+            cursorBlinking: 'smooth',
+            cursorSmoothCaretAnimation: 'on',
+            cursorWidth: 3,
+            // Better touch scrolling
+            smoothScrolling: true,
+            // Touch-friendly context menu
+            contextmenu: true,
+            // Enhanced selection for touch
+            selectOnLineNumbers: true,
+            selectionHighlight: false,
+            // Better touch responsiveness
+            mouseWheelScrollSensitivity: 1
+          });
+
+          // Add touch-specific event handlers
+          const editorDomNode = editor.getDomNode();
+          if (editorDomNode) {
+            // Prevent default touch behaviors that might interfere
+            editorDomNode.addEventListener('touchstart', (e) => {
+              // Allow normal editor touch behavior
+            }, { passive: true });
+
+            // Handle touch scrolling
+            editorDomNode.addEventListener('touchmove', (e) => {
+              // Allow normal scrolling
+            }, { passive: true });
+
+            // Double-tap to select word
+            let lastTouchTime = 0;
+            editorDomNode.addEventListener('touchend', (e) => {
+              const currentTime = new Date().getTime();
+              const tapLength = currentTime - lastTouchTime;
+              if (tapLength < 500 && tapLength > 0) {
+                // Double tap detected - select word at cursor
+                const position = editor.getPosition();
+                if (position) {
+                  const wordAtPosition = editor.getModel()?.getWordAtPosition(position);
+                  if (wordAtPosition) {
+                    editor.setSelection({
+                      startLineNumber: position.lineNumber,
+                      startColumn: wordAtPosition.startColumn,
+                      endLineNumber: position.lineNumber,
+                      endColumn: wordAtPosition.endColumn
+                    });
+                  }
+                }
+                e.preventDefault();
+              }
+              lastTouchTime = currentTime;
+            });
+          }
+        }
+
+        // Enhanced language-specific configurations
+        const model = editor.getModel();
+        if (model) {
+          // Configure tab size based on language
+          const tabSizes = {
+            'python': 4,
+            'yaml': 2,
+            'javascript': 2,
+            'typescript': 2,
+            'html': 2,
+            'css': 2,
+            'json': 2
+          };
+          const tabSize = tabSizes[language] || 4;
+          model.updateOptions({ tabSize, insertSpaces: true });
+        }
+
+        // Custom event for when editor is ready
+        editorElement.dispatchEvent(new CustomEvent('monaco-editor-ready', {
+          detail: { editor, container: editorElement, language }
+        }));
+
+      } catch (error) {
+        console.error('Failed to initialize Monaco editor:', error);
+        editorElement.innerHTML = `
+          <div class="editor-error" style="
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #ef4444;
+            font-family: system-ui, -apple-system, sans-serif;
+            text-align: center;
+            padding: 20px;
+          ">
+            <p style="margin: 0 0 8px 0; font-weight: 600;">Failed to load code editor</p>
+            <p style="margin: 0; font-size: 14px; opacity: 0.8;">Please refresh the page to try again</p>
+          </div>
+        `;
+      }
+    });
+  };
+
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeMonacoEditor);
+  } else {
+    initializeMonacoEditor();
+  }
+
+  // Re-initialize for dynamically added editors
+  document.addEventListener('astro:page-load', initializeMonacoEditor);
+</script>

@@ -1,0 +1,11 @@
+# Task ID: 8
+# Title: Build Personalized Problem Recommendation Engine
+# Status: pending
+# Dependencies: 7
+# Priority: medium
+# Description: Build an AI-powered recommendation system to suggest optimal problems to users based on their skill and history.
+# Details:
+Implement a hybrid model combining collaborative filtering (matrix factorization) and content-based approaches. Use deep learning embeddings to match users with problems based on skill level, history, and learning objectives.
+
+# Test Strategy:
+Offline evaluation of the recommendation model using historical data (precision, recall). A/B testing with a control group to measure the effectiveness of recommendations on user engagement and skill improvement.

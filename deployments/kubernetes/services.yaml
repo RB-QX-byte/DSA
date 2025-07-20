@@ -1,0 +1,85 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: judge-worker-service
+  namespace: competitive-programming
+  labels:
+    app: judge-worker
+    component: network
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - name: health
+    port: 8081
+    targetPort: 8081
+    protocol: TCP
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+    protocol: TCP
+  selector:
+    app: judge-worker
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: judge-worker-headless
+  namespace: competitive-programming
+  labels:
+    app: judge-worker
+    component: network
+    service-type: headless
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+  - name: health
+    port: 8081
+    targetPort: 8081
+    protocol: TCP
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+    protocol: TCP
+  selector:
+    app: judge-worker
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: competitive-programming
+  labels:
+    app: postgres
+    component: database
+spec:
+  type: ClusterIP
+  ports:
+  - name: postgres
+    port: 5432
+    targetPort: 5432
+    protocol: TCP
+  selector:
+    app: postgres
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: competitive-programming
+  labels:
+    app: redis
+    component: cache
+spec:
+  type: ClusterIP
+  ports:
+  - name: redis
+    port: 6379
+    targetPort: 6379
+    protocol: TCP
+  selector:
+    app: redis

@@ -1,0 +1,207 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: judge-worker-keda-scaler
+  namespace: competitive-programming
+  labels:
+    app: judge-worker
+    component: autoscaling
+    scaler: keda
+spec:
+  scaleTargetRef:
+    name: judge-worker
+  
+  # Scaling configuration
+  minReplicaCount: 2
+  maxReplicaCount: 30
+  pollingInterval: 15
+  cooldownPeriod: 300
+  idleReplicaCount: 2
+  
+  # Advanced scaling behavior
+  advanced:
+    restoreToOriginalReplicaCount: true
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleUp:
+          stabilizationWindowSeconds: 60
+          policies:
+          - type: Percent
+            value: 100
+            periodSeconds: 60
+          - type: Pods
+            value: 3
+            periodSeconds: 60
+          selectPolicy: Max
+        scaleDown:
+          stabilizationWindowSeconds: 300
+          policies:
+          - type: Percent
+            value: 50
+            periodSeconds: 120
+          - type: Pods
+            value: 1
+            periodSeconds: 120
+          selectPolicy: Min
+  
+  # KEDA triggers for advanced scaling
+  triggers:
+  
+  # Redis queue depth trigger
+  - type: redis
+    metadata:
+      address: redis-service.competitive-programming.svc.cluster.local:6379
+      listName: judge_queue
+      listLength: "10"
+      enableTLS: "false"
+      databaseIndex: "0"
+    authenticationRef:
+      name: redis-auth
+  
+  # Prometheus-based CPU trigger
+  - type: prometheus
+    metadata:
+      serverAddress: http://prometheus.competitive-programming-monitoring.svc:9090
+      metricName: judge_cpu_utilization_percent
+      threshold: "70"
+      query: |
+        avg(
+          rate(container_cpu_usage_seconds_total{pod=~"judge-worker-.*", container="judge-worker"}[2m]) * 100
+        )
+  
+  # Prometheus-based memory trigger
+  - type: prometheus
+    metadata:
+      serverAddress: http://prometheus.competitive-programming-monitoring.svc:9090
+      metricName: judge_memory_utilization_percent
+      threshold: "80"
+      query: |
+        avg(
+          (container_memory_working_set_bytes{pod=~"judge-worker-.*", container="judge-worker"} /
+           container_spec_memory_limit_bytes{pod=~"judge-worker-.*", container="judge-worker"}) * 100
+        )
+  
+  # Active submissions per pod trigger
+  - type: prometheus
+    metadata:
+      serverAddress: http://prometheus.competitive-programming-monitoring.svc:9090
+      metricName: judge_active_submissions_per_pod
+      threshold: "5"
+      query: |
+        avg(judge_active_submissions{job="judge-worker"})
+  
+  # Response time trigger
+  - type: prometheus
+    metadata:
+      serverAddress: http://prometheus.competitive-programming-monitoring.svc:9090
+      metricName: judge_avg_response_time_seconds
+      threshold: "2"
+      query: |
+        avg(
+          rate(judge_response_time_seconds_sum{job="judge-worker"}[2m]) /
+          rate(judge_response_time_seconds_count{job="judge-worker"}[2m])
+        )
+  
+  # Error rate trigger
+  - type: prometheus
+    metadata:
+      serverAddress: http://prometheus.competitive-programming-monitoring.svc:9090
+      metricName: judge_error_rate
+      threshold: "5"
+      query: |
+        avg(
+          (rate(judge_errors_total{job="judge-worker"}[2m]) /
+           rate(judge_requests_total{job="judge-worker"}[2m])) * 100
+        )
+
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: judge-worker-contest-keda-scaler
+  namespace: competitive-programming
+  labels:
+    app: judge-worker
+    component: autoscaling
+    scaler: keda
+    mode: contest
+spec:
+  scaleTargetRef:
+    name: judge-worker
+  
+  # Contest mode - more aggressive scaling
+  minReplicaCount: 5
+  maxReplicaCount: 100
+  pollingInterval: 10
+  cooldownPeriod: 180
+  idleReplicaCount: 5
+  
+  advanced:
+    restoreToOriginalReplicaCount: false
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleUp:
+          stabilizationWindowSeconds: 30
+          policies:
+          - type: Percent
+            value: 300
+            periodSeconds: 30
+          - type: Pods
+            value: 10
+            periodSeconds: 30
+          selectPolicy: Max
+        scaleDown:
+          stabilizationWindowSeconds: 600
+          policies:
+          - type: Percent
+            value: 25
+            periodSeconds: 120
+          - type: Pods
+            value: 2
+            periodSeconds: 120
+          selectPolicy: Min
+  
+  triggers:
+  # More sensitive triggers for contest mode
+  - type: redis
+    metadata:
+      address: redis-service.competitive-programming.svc.cluster.local:6379
+      listName: judge_queue
+      listLength: "3"  # More sensitive
+      enableTLS: "false"
+      databaseIndex: "0"
+    authenticationRef:
+      name: redis-auth
+  
+  - type: prometheus
+    metadata:
+      serverAddress: http://prometheus.competitive-programming-monitoring.svc:9090
+      metricName: judge_cpu_utilization_percent
+      threshold: "50"  # More sensitive
+      query: |
+        avg(
+          rate(container_cpu_usage_seconds_total{pod=~"judge-worker-.*", container="judge-worker"}[1m]) * 100
+        )
+  
+  - type: prometheus
+    metadata:
+      serverAddress: http://prometheus.competitive-programming-monitoring.svc:9090
+      metricName: judge_active_submissions_per_pod
+      threshold: "2"  # More sensitive
+      query: |
+        avg(judge_active_submissions{job="judge-worker"})
+
+---
+apiVersion: v1
+kind: TriggerAuthentication
+metadata:
+  name: redis-auth
+  namespace: competitive-programming
+  labels:
+    app: judge-worker
+    component: autoscaling
+spec:
+  secretTargetRef:
+  - parameter: password
+    name: judge-worker-secrets
+    key: REDIS_PASSWORD

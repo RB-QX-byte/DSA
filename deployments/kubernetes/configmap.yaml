@@ -1,0 +1,151 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: judge-worker-config
+  namespace: competitive-programming
+  labels:
+    app: judge-worker
+    component: configuration
+data:
+  # Judge worker configuration
+  judge-config.yaml: |
+    judge:
+      worker_id: "auto"
+      concurrency: 4
+      timeout: 30s
+      memory_limit: "512Mi"
+      cpu_limit: "1000m"
+      
+    sandbox:
+      type: "dual-layer"
+      isolate_box_count: 16
+      docker_image: "judge-worker:latest"
+      security_profile: "strict"
+      
+    security:
+      enable_seccomp: true
+      enable_apparmor: true
+      enable_selinux: false
+      drop_capabilities:
+        - ALL
+      add_capabilities:
+        - SETUID
+        - SETGID
+        - SYS_CHROOT
+      
+    monitoring:
+      enable_metrics: true
+      metrics_port: 9090
+      health_check_port: 8081
+      log_level: "info"
+      
+    resources:
+      memory_monitor: true
+      cpu_monitor: true
+      disk_monitor: true
+      network_monitor: true
+      
+  # Isolate configuration
+  isolate.conf: |
+    # Isolate configuration for Kubernetes deployment
+    box_count = 16
+    cg_enable = true
+    cg_memory_limit = 512M
+    cg_timing = true
+    cg_root = /sys/fs/cgroup
+    
+  # Security profiles
+  seccomp-profile.json: |
+    {
+      "defaultAction": "SCMP_ACT_ERRNO",
+      "architectures": [
+        "SCMP_ARCH_X86_64",
+        "SCMP_ARCH_X86",
+        "SCMP_ARCH_X32"
+      ],
+      "syscalls": [
+        {
+          "names": [
+            "read", "write", "open", "close", "stat", "fstat", "lstat",
+            "poll", "lseek", "mmap", "mprotect", "munmap", "brk",
+            "rt_sigaction", "rt_sigprocmask", "rt_sigreturn", "ioctl",
+            "pread64", "pwrite64", "readv", "writev", "access", "pipe",
+            "select", "sched_yield", "mremap", "msync", "mincore", "madvise",
+            "dup", "dup2", "pause", "nanosleep", "getitimer", "alarm",
+            "setitimer", "getpid", "sendfile", "clone", "fork", "vfork",
+            "execve", "exit", "wait4", "kill", "uname", "fcntl", "flock",
+            "fsync", "fdatasync", "truncate", "ftruncate", "getdents",
+            "getcwd", "chdir", "fchdir", "rename", "mkdir", "rmdir",
+            "creat", "link", "unlink", "symlink", "readlink", "chmod",
+            "fchmod", "chown", "fchown", "lchown", "umask", "gettimeofday",
+            "getrlimit", "getrusage", "sysinfo", "times", "getuid", "getgid",
+            "setuid", "setgid", "geteuid", "getegid", "setpgid", "getppid",
+            "getpgrp", "setsid", "setreuid", "setregid", "getgroups",
+            "setgroups", "setresuid", "getresuid", "setresgid", "getresgid",
+            "getpgid", "setfsuid", "setfsgid", "getsid", "capget", "capset",
+            "rt_sigpending", "rt_sigtimedwait", "rt_sigqueueinfo",
+            "rt_sigsuspend", "sigaltstack", "utime", "mknod", "personality",
+            "ustat", "statfs", "fstatfs", "sysfs", "getpriority", "setpriority",
+            "sched_setparam", "sched_getparam", "sched_setscheduler",
+            "sched_getscheduler", "sched_get_priority_max", "sched_get_priority_min",
+            "sched_rr_get_interval", "mlock", "munlock", "mlockall", "munlockall",
+            "vhangup", "modify_ldt", "pivot_root", "_sysctl", "prctl", "arch_prctl",
+            "adjtimex", "setrlimit", "chroot", "sync", "acct", "settimeofday",
+            "mount", "umount2", "swapon", "swapoff", "reboot", "sethostname",
+            "setdomainname", "iopl", "ioperm", "quotactl", "gettid", "readahead",
+            "setxattr", "lsetxattr", "fsetxattr", "getxattr", "lgetxattr",
+            "fgetxattr", "listxattr", "llistxattr", "flistxattr", "removexattr",
+            "lremovexattr", "fremovexattr", "tkill", "time", "futex",
+            "sched_setaffinity", "sched_getaffinity", "set_thread_area",
+            "get_thread_area", "io_setup", "io_destroy", "io_getevents",
+            "io_submit", "io_cancel", "lookup_dcookie", "epoll_create",
+            "getdents64", "set_tid_address", "restart_syscall", "semtimedop",
+            "fadvise64", "timer_create", "timer_settime", "timer_gettime",
+            "timer_getoverrun", "timer_delete", "clock_settime", "clock_gettime",
+            "clock_getres", "clock_nanosleep", "exit_group", "epoll_wait",
+            "epoll_ctl", "tgkill", "utimes", "mbind", "set_mempolicy",
+            "get_mempolicy", "mq_open", "mq_unlink", "mq_timedsend",
+            "mq_timedreceive", "mq_notify", "mq_getsetattr", "waitid",
+            "add_key", "request_key", "keyctl", "ioprio_set", "ioprio_get",
+            "inotify_init", "inotify_add_watch", "inotify_rm_watch",
+            "openat", "mkdirat", "mknodat", "fchownat", "futimesat",
+            "newfstatat", "unlinkat", "renameat", "linkat", "symlinkat",
+            "readlinkat", "fchmodat", "faccessat", "pselect6", "ppoll",
+            "unshare", "set_robust_list", "get_robust_list", "splice",
+            "tee", "sync_file_range", "vmsplice", "move_pages", "utimensat",
+            "epoll_pwait", "signalfd", "timerfd_create", "eventfd", "fallocate",
+            "timerfd_settime", "timerfd_gettime", "accept4", "signalfd4",
+            "eventfd2", "epoll_create1", "dup3", "pipe2", "inotify_init1",
+            "preadv", "pwritev", "rt_tgsigqueueinfo", "perf_event_open",
+            "recvmmsg", "fanotify_init", "fanotify_mark", "prlimit64",
+            "name_to_handle_at", "open_by_handle_at", "clock_adjtime",
+            "syncfs", "sendmmsg", "setns", "getcpu", "process_vm_readv",
+            "process_vm_writev"
+          ],
+          "action": "SCMP_ACT_ALLOW"
+        }
+      ]
+    }
+    
+  # Logging configuration
+  fluent-bit.conf: |
+    [SERVICE]
+        Flush         1
+        Log_Level     info
+        Daemon        off
+        HTTP_Server   On
+        HTTP_Listen   0.0.0.0
+        HTTP_Port     2020
+        
+    [INPUT]
+        Name              tail
+        Path              /var/log/judge/*.log
+        Parser            json
+        Tag               judge.*
+        Refresh_Interval  5
+        
+    [OUTPUT]
+        Name  forward
+        Match judge.*
+        Host  fluentd.competitive-programming-monitoring.svc.cluster.local
+        Port  24224

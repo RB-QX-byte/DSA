@@ -1,0 +1,11 @@
+# Task ID: 1
+# Title: Core Backend and Database Setup
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Establish the foundational backend architecture using GoLang in a modular monolithic style and integrate with Supabase for database and authentication, as outlined in Phase 1.
+# Details:
+Implement User Management and Problem Management services. Design and create the initial database schema in PostgreSQL (via Supabase) with critical indexes for users and problems. Configure Supabase Auth and Row Level Security (RLS) for data isolation.
+
+# Test Strategy:
+Unit tests for GoLang services. Integration tests for Supabase connection, authentication flow, and basic CRUD operations on user and problem tables.

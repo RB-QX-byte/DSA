@@ -1,0 +1,181 @@
+---
+import MainLayout from '../../layouts/MainLayout.astro';
+
+// Sample problem data (in a real app, this would come from an API)
+const problems = [
+  {
+    id: 1,
+    slug: 'two-sum',
+    title: 'Two Sum',
+    difficulty: 'Easy',
+    difficultyColor: 'text-success',
+    tags: ['Array', 'Hash Table'],
+    acceptanceRate: 49.2,
+    description: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.'
+  },
+  {
+    id: 2,
+    slug: 'maximum-subarray',
+    title: 'Maximum Subarray',
+    difficulty: 'Medium',
+    difficultyColor: 'text-warning',
+    tags: ['Array', 'Dynamic Programming'],
+    acceptanceRate: 54.8,
+    description: 'Given an integer array nums, find the contiguous subarray which has the largest sum and return its sum.'
+  },
+  {
+    id: 3,
+    slug: 'binary-tree-inorder-traversal',
+    title: 'Binary Tree Inorder Traversal',
+    difficulty: 'Easy',
+    difficultyColor: 'text-success',
+    tags: ['Tree', 'Stack', 'Recursion'],
+    acceptanceRate: 67.1,
+    description: 'Given the root of a binary tree, return the inorder traversal of its nodes values.'
+  },
+  {
+    id: 4,
+    slug: 'merge-intervals',
+    title: 'Merge Intervals',
+    difficulty: 'Medium',
+    difficultyColor: 'text-warning',
+    tags: ['Array', 'Sorting'],
+    acceptanceRate: 42.5,
+    description: 'Given an array of intervals, merge all overlapping intervals.'
+  },
+  {
+    id: 5,
+    slug: 'word-ladder',
+    title: 'Word Ladder',
+    difficulty: 'Hard',
+    difficultyColor: 'text-danger',
+    tags: ['Hash Table', 'String', 'BFS'],
+    acceptanceRate: 35.7,
+    description: 'Given two words, find the length of shortest transformation sequence from beginWord to endWord.'
+  },
+  {
+    id: 6,
+    slug: 'reverse-linked-list',
+    title: 'Reverse Linked List',
+    difficulty: 'Easy',
+    difficultyColor: 'text-success',
+    tags: ['Linked List', 'Recursion'],
+    acceptanceRate: 72.3,
+    description: 'Given the head of a singly linked list, reverse the list, and return the reversed list.'
+  }
+];
+---
+
+<MainLayout title="Problems" description="Browse and solve competitive programming problems to improve your coding skills.">
+  <div class="container py-8">
+    <!-- Page Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl md:text-4xl font-bold mb-4">Problems</h1>
+      <p class="text-secondary text-lg">
+        Sharpen your programming skills with our curated collection of problems.
+      </p>
+    </div>
+    
+    <!-- Filters and Search -->
+    <div class="mb-6 flex flex-col sm:flex-row gap-4 items-center justify-between">
+      <div class="flex flex-wrap gap-2">
+        <button class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors">
+          All
+        </button>
+        <button class="px-4 py-2 bg-secondary text-secondary hover:bg-tertiary transition-colors">
+          Easy
+        </button>
+        <button class="px-4 py-2 bg-secondary text-secondary hover:bg-tertiary transition-colors">
+          Medium
+        </button>
+        <button class="px-4 py-2 bg-secondary text-secondary hover:bg-tertiary transition-colors">
+          Hard
+        </button>
+      </div>
+      
+      <div class="flex-1 max-w-md">
+        <input 
+          type="search" 
+          placeholder="Search problems..." 
+          class="w-full px-4 py-2 border border-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+        />
+      </div>
+    </div>
+    
+    <!-- Problems List -->
+    <div class="grid gap-4">
+      {problems.map((problem) => (
+        <article class="bg-primary border border-primary rounded-lg p-6 hover:shadow-md transition-shadow">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div class="flex-1">
+              <div class="flex items-center gap-4 mb-2">
+                <h2 class="text-xl font-semibold">
+                  <a href={`/problems/${problem.slug}`} class="hover:text-primary transition-colors">
+                    {problem.title}
+                  </a>
+                </h2>
+                <span class={`px-2 py-1 text-sm font-medium rounded ${problem.difficultyColor}`}>
+                  {problem.difficulty}
+                </span>
+              </div>
+              
+              <p class="text-secondary mb-3 line-clamp-2">
+                {problem.description}
+              </p>
+              
+              <div class="flex flex-wrap gap-2 mb-2">
+                {problem.tags.map((tag) => (
+                  <span class="px-2 py-1 bg-secondary text-secondary text-sm rounded">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+            
+            <div class="flex flex-col items-end gap-2">
+              <div class="text-sm text-secondary">
+                {problem.acceptanceRate}% accepted
+              </div>
+              <a 
+                href={`/problems/${problem.slug}`} 
+                class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
+              >
+                Solve
+              </a>
+            </div>
+          </div>
+        </article>
+      ))}
+    </div>
+    
+    <!-- Pagination -->
+    <div class="mt-8 flex justify-center">
+      <nav class="flex gap-2" aria-label="Pagination">
+        <button class="px-3 py-2 bg-secondary text-secondary rounded-lg hover:bg-tertiary transition-colors disabled:opacity-50" disabled>
+          Previous
+        </button>
+        <button class="px-3 py-2 bg-primary text-white rounded-lg">
+          1
+        </button>
+        <button class="px-3 py-2 bg-secondary text-secondary rounded-lg hover:bg-tertiary transition-colors">
+          2
+        </button>
+        <button class="px-3 py-2 bg-secondary text-secondary rounded-lg hover:bg-tertiary transition-colors">
+          3
+        </button>
+        <button class="px-3 py-2 bg-secondary text-secondary rounded-lg hover:bg-tertiary transition-colors">
+          Next
+        </button>
+      </nav>
+    </div>
+  </div>
+</MainLayout>
+
+<style>
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style>

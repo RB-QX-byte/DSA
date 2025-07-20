@@ -1,0 +1,89 @@
+/* Design Tokens - Competitive Programming Platform */
+
+/* This file contains all design tokens used across the application */
+/* Import this file in components that need access to design tokens */
+
+/* Theme-specific overrides */
+[data-theme="light"] {
+  --color-text-primary: var(--color-gray-900);
+  --color-text-secondary: var(--color-gray-600);
+  --color-text-muted: var(--color-gray-500);
+  --color-text-inverse: var(--color-white);
+  
+  --color-bg-primary: var(--color-white);
+  --color-bg-secondary: var(--color-gray-50);
+  --color-bg-tertiary: var(--color-gray-100);
+  --color-bg-inverse: var(--color-gray-900);
+  
+  --color-border-primary: var(--color-gray-200);
+  --color-border-secondary: var(--color-gray-300);
+}
+
+[data-theme="dark"] {
+  --color-text-primary: var(--color-gray-100);
+  --color-text-secondary: var(--color-gray-300);
+  --color-text-muted: var(--color-gray-400);
+  --color-text-inverse: var(--color-gray-900);
+  
+  --color-bg-primary: var(--color-gray-900);
+  --color-bg-secondary: var(--color-gray-800);
+  --color-bg-tertiary: var(--color-gray-700);
+  --color-bg-inverse: var(--color-white);
+  
+  --color-border-primary: var(--color-gray-700);
+  --color-border-secondary: var(--color-gray-600);
+}
+
+/* Component-specific tokens */
+:root {
+  /* Navigation */
+  --nav-height: 4rem;
+  --nav-bg: var(--color-bg-primary);
+  --nav-border: var(--color-border-primary);
+  --nav-shadow: var(--shadow-sm);
+  
+  /* Sidebar */
+  --sidebar-width: 16rem;
+  --sidebar-width-collapsed: 4rem;
+  --sidebar-bg: var(--color-bg-secondary);
+  --sidebar-border: var(--color-border-primary);
+  
+  /* Code editor */
+  --editor-bg: var(--color-gray-900);
+  --editor-text: var(--color-gray-100);
+  --editor-border: var(--color-gray-700);
+  --editor-selection: rgba(59, 130, 246, 0.2);
+  
+  /* Problem difficulty colors */
+  --difficulty-easy: var(--color-success);
+  --difficulty-medium: var(--color-warning);
+  --difficulty-hard: var(--color-danger);
+  
+  /* Verdict colors */
+  --verdict-accepted: var(--color-success);
+  --verdict-wrong: var(--color-danger);
+  --verdict-pending: var(--color-warning);
+  --verdict-error: var(--color-danger);
+  --verdict-timeout: var(--color-warning);
+  
+  /* Rating colors */
+  --rating-newbie: #808080;
+  --rating-pupil: #008000;
+  --rating-specialist: #03A89E;
+  --rating-expert: #0000FF;
+  --rating-candidate: #AA00AA;
+  --rating-master: #FF8C00;
+  --rating-grandmaster: #FF0000;
+  
+  /* Animation durations */
+  --anim-fast: 0.15s;
+  --anim-normal: 0.2s;
+  --anim-slow: 0.3s;
+  
+  /* Layout constants */
+  --header-height: 4rem;
+  --footer-height: 3rem;
+  --content-max-width: 1200px;
+  --sidebar-width-desktop: 16rem;
+  --sidebar-width-mobile: 100%;
+}
