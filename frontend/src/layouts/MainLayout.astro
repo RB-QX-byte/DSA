@@ -58,14 +58,9 @@ const fullTitle = title === siteName ? title : `${title} | ${siteName}`;
     
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" type="image/png" href="/favicon-32x32.png" sizes="32x32" />
-    <link rel="icon" type="image/png" href="/favicon-16x16.png" sizes="16x16" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="manifest" href="/site.webmanifest" />
     
     <!-- Preload important resources -->
-    <link rel="preload" href="/fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="/fonts/jetbrains-mono.woff2" as="font" type="font/woff2" crossorigin />
+    <!-- Fonts will be loaded from Google Fonts or system fonts -->
     
     <!-- Theme detection script (inline to prevent FOUC) -->
     <script is:inline>
@@ -103,26 +98,29 @@ const fullTitle = title === siteName ? title : `${title} | ${siteName}`;
     <!-- Main application structure -->
     <div id="app" class="min-h-screen flex flex-col">
       <!-- Header -->
-      <header class="sticky top-0 z-40 bg-primary border-b border-primary shadow-sm">
+      <header class="sticky top-0 z-40 glass border-b border-white/10 shadow-lg backdrop-blur-xl">
         <div class="container">
-          <div class="flex items-center justify-between h-16">
+          <div class="flex items-center justify-between h-20">
             <!-- Logo and brand -->
             <div class="flex items-center gap-4">
-              <a href="/" class="flex items-center gap-2 text-primary hover:text-primary-dark transition-colors">
-                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect width="32" height="32" rx="8" fill="currentColor"/>
-                  <path d="M8 12h16M8 16h16M8 20h12" stroke="white" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-                <span class="text-xl font-bold">{siteName}</span>
+              <a href="/" class="flex items-center gap-3 text-primary hover:text-primary-dark transition-all duration-300 group">
+                <div class="relative">
+                  <div class="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 glow-primary">
+                    <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M8 12h16M8 16h16M8 20h12" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                    </svg>
+                  </div>
+                </div>
+                <span class="text-2xl font-bold gradient-primary bg-clip-text text-transparent">{siteName}</span>
               </a>
             </div>
             
             <!-- Desktop navigation -->
-            <nav class="hidden md:flex items-center gap-6" aria-label="Main navigation">
-              <a href="/problems" class="text-secondary hover:text-primary transition-colors">Problems</a>
-              <a href="/contests" class="text-secondary hover:text-primary transition-colors">Contests</a>
-              <a href="/leaderboard" class="text-secondary hover:text-primary transition-colors">Leaderboard</a>
-              <a href="/about" class="text-secondary hover:text-primary transition-colors">About</a>
+            <nav class="hidden md:flex items-center gap-8" aria-label="Main navigation">
+              <a href="/problems" class="nav-link text-secondary hover:text-primary transition-all duration-300 font-medium">🎯 Problems</a>
+              <a href="/contests" class="nav-link text-secondary hover:text-primary transition-all duration-300 font-medium">🏆 Contests</a>
+              <a href="/leaderboard" class="nav-link text-secondary hover:text-primary transition-all duration-300 font-medium">📊 Leaderboard</a>
+              <a href="/about" class="nav-link text-secondary hover:text-primary transition-all duration-300 font-medium">ℹ️ About</a>
             </nav>
             
             <!-- User actions -->
@@ -130,24 +128,24 @@ const fullTitle = title === siteName ? title : `${title} | ${siteName}`;
               <!-- Theme toggle -->
               <button 
                 id="theme-toggle"
-                class="p-2 rounded-md hover:bg-secondary transition-colors"
+                class="p-3 glass rounded-xl hover:shadow-md transition-all duration-300 group"
                 aria-label="Toggle theme"
               >
-                <svg class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 hidden dark:block group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
                 </svg>
-                <svg class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 block dark:hidden group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
                 </svg>
               </button>
               
               <!-- Authentication buttons -->
-              <div class="flex items-center gap-2">
-                <a href="/login" class="px-4 py-2 text-secondary hover:text-primary transition-colors">
-                  Login
+              <div class="flex items-center gap-3">
+                <a href="/login" class="px-6 py-3 text-secondary hover:text-primary transition-all duration-300 font-medium glass rounded-xl hover:shadow-md">
+                  🔐 Login
                 </a>
-                <a href="/register" class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors">
-                  Sign Up
+                <a href="/register" class="px-6 py-3 gradient-primary text-white rounded-xl font-medium hover:scale-105 transition-all duration-300 glow-primary shadow-md">
+                  ✨ Sign Up
                 </a>
               </div>
               

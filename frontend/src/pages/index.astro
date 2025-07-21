@@ -4,69 +4,83 @@ import MainLayout from '../layouts/MainLayout.astro';
 
 <MainLayout title="CodeArena" description="Master competitive programming with secure code execution, real-time contests, and AI-powered performance analytics.">
   <!-- Hero Section -->
-  <section class="bg-gradient-to-br from-primary to-primary-dark text-white py-20">
-    <div class="container text-center">
-      <h1 class="text-4xl md:text-6xl font-bold mb-6">
-        Master <span class="text-accent">Competitive Programming</span>
-      </h1>
-      <p class="text-xl md:text-2xl mb-8 max-w-3xl mx-auto opacity-90">
-        Secure code execution, real-time contests, and AI-powered analytics to accelerate your programming journey.
-      </p>
-      <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="/problems" class="bg-white text-primary px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
-          Start Solving
-        </a>
-        <a href="/contests" class="border border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-primary transition-colors">
-          View Contests
-        </a>
+  <section class="relative gradient-animated text-white py-32 overflow-hidden">
+    <!-- Background decorative elements -->
+    <div class="absolute inset-0 opacity-20">
+      <div class="absolute top-20 left-10 w-72 h-72 bg-white rounded-full mix-blend-multiply filter blur-xl opacity-30 float"></div>
+      <div class="absolute top-40 right-10 w-96 h-96 bg-accent rounded-full mix-blend-multiply filter blur-xl opacity-30 float-delayed"></div>
+      <div class="absolute -bottom-8 left-20 w-80 h-80 bg-secondary rounded-full mix-blend-multiply filter blur-xl opacity-30 float"></div>
+    </div>
+    
+    <div class="container text-center relative z-10">
+      <div class="max-w-5xl mx-auto">
+        <h1 class="hero-title text-5xl md:text-7xl font-bold mb-8 leading-tight">
+          Master <span class="text-transparent bg-clip-text gradient-rainbow">Competitive Programming</span>
+        </h1>
+        <p class="hero-subtitle text-xl md:text-2xl mb-12 max-w-4xl mx-auto opacity-95 leading-relaxed">
+          🚀 Secure code execution, real-time contests, and AI-powered analytics to accelerate your programming journey to new heights.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-6 justify-center">
+          <a href="/problems" class="group btn-modern glass px-10 py-4 rounded-xl font-semibold text-lg hover:shadow-xl hover:scale-105 transition-all duration-300 glow-primary">
+            <span class="relative z-10">🎯 Start Solving</span>
+          </a>
+          <a href="/contests" class="group glass border-2 border-white/30 text-white px-10 py-4 rounded-xl font-semibold text-lg hover:glass hover:scale-105 transition-all duration-300">
+            🏆 View Contests
+          </a>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- Features Section -->
-  <section class="py-20 bg-secondary">
+  <section class="py-24 bg-gradient-to-b from-bg-primary to-bg-secondary relative">
     <div class="container">
-      <h2 class="text-3xl md:text-4xl font-bold text-center mb-12">
-        Why Choose CodeArena?
-      </h2>
+      <div class="text-center mb-16">
+        <h2 class="text-4xl md:text-5xl font-bold mb-6 text-transparent bg-clip-text gradient-primary">
+          Why Choose CodeArena?
+        </h2>
+        <p class="text-lg text-secondary max-w-3xl mx-auto">
+          Experience the future of competitive programming with cutting-edge features designed for modern developers
+        </p>
+      </div>
       
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div class="grid-modern">
         <!-- Feature 1 -->
-        <div class="text-center p-6 bg-primary rounded-lg shadow-md">
-          <div class="w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="group card-modern text-center p-8 rounded-2xl hover:shadow-colored transition-all duration-300">
+          <div class="w-20 h-20 gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 glow-primary">
+            <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
           </div>
-          <h3 class="text-xl font-semibold mb-2">Secure Code Execution</h3>
-          <p class="text-secondary">
-            Run your code safely with our sandboxed environment supporting 60+ programming languages.
+          <h3 class="text-2xl font-bold mb-4 text-primary">🔒 Secure Code Execution</h3>
+          <p class="text-secondary leading-relaxed">
+            Run your code safely with our advanced sandboxed environment supporting 60+ programming languages with enterprise-grade security.
           </p>
         </div>
         
         <!-- Feature 2 -->
-        <div class="text-center p-6 bg-primary rounded-lg shadow-md">
-          <div class="w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="group card-modern text-center p-8 rounded-2xl hover:shadow-colored transition-all duration-300">
+          <div class="w-20 h-20 gradient-secondary rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 glow-secondary">
+            <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
             </svg>
           </div>
-          <h3 class="text-xl font-semibold mb-2">Real-time Contests</h3>
-          <p class="text-secondary">
-            Participate in live contests with real-time leaderboards and instant feedback.
+          <h3 class="text-2xl font-bold mb-4 text-primary">⚡ Real-time Contests</h3>
+          <p class="text-secondary leading-relaxed">
+            Participate in live contests with real-time leaderboards, instant feedback, and competitive rankings against global developers.
           </p>
         </div>
         
         <!-- Feature 3 -->
-        <div class="text-center p-6 bg-primary rounded-lg shadow-md">
-          <div class="w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="group card-modern text-center p-8 rounded-2xl hover:shadow-colored transition-all duration-300">
+          <div class="w-20 h-20 gradient-accent rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 glow-accent">
+            <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
             </svg>
           </div>
-          <h3 class="text-xl font-semibold mb-2">AI-Powered Analytics</h3>
-          <p class="text-secondary">
-            Get personalized insights and recommendations to improve your coding skills.
+          <h3 class="text-2xl font-bold mb-4 text-primary">🤖 AI-Powered Analytics</h3>
+          <p class="text-secondary leading-relaxed">
+            Get personalized insights, performance analytics, and AI-driven recommendations to accelerate your coding skill development.
           </p>
         </div>
       </div>
@@ -74,41 +88,69 @@ import MainLayout from '../layouts/MainLayout.astro';
   </section>
 
   <!-- Statistics Section -->
-  <section class="py-20">
-    <div class="container">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
-        <div>
-          <div class="text-4xl font-bold text-primary mb-2">10,000+</div>
-          <div class="text-secondary">Problems Solved</div>
+  <section class="py-24 relative overflow-hidden">
+    <div class="absolute inset-0 gradient-primary opacity-5"></div>
+    <div class="container relative z-10">
+      <div class="text-center mb-16">
+        <h2 class="text-3xl md:text-4xl font-bold mb-4 text-primary">Trusted by Developers Worldwide</h2>
+        <p class="text-secondary">Join our growing community of competitive programmers</p>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+        <div class="group">
+          <div class="card-modern p-6 rounded-xl hover:scale-105 transition-all duration-300">
+            <div class="text-5xl md:text-6xl font-bold gradient-primary bg-clip-text text-transparent mb-3 pulse-glow">10,000+</div>
+            <div class="text-secondary font-medium">🎯 Problems Solved</div>
+          </div>
         </div>
-        <div>
-          <div class="text-4xl font-bold text-primary mb-2">5,000+</div>
-          <div class="text-secondary">Active Users</div>
+        <div class="group">
+          <div class="card-modern p-6 rounded-xl hover:scale-105 transition-all duration-300">
+            <div class="text-5xl md:text-6xl font-bold gradient-secondary bg-clip-text text-transparent mb-3 pulse-glow">5,000+</div>
+            <div class="text-secondary font-medium">👥 Active Users</div>
+          </div>
         </div>
-        <div>
-          <div class="text-4xl font-bold text-primary mb-2">100+</div>
-          <div class="text-secondary">Contests Held</div>
+        <div class="group">
+          <div class="card-modern p-6 rounded-xl hover:scale-105 transition-all duration-300">
+            <div class="text-5xl md:text-6xl font-bold gradient-accent bg-clip-text text-transparent mb-3 pulse-glow">100+</div>
+            <div class="text-secondary font-medium">🏆 Contests Held</div>
+          </div>
         </div>
-        <div>
-          <div class="text-4xl font-bold text-primary mb-2">60+</div>
-          <div class="text-secondary">Languages Supported</div>
+        <div class="group">
+          <div class="card-modern p-6 rounded-xl hover:scale-105 transition-all duration-300">
+            <div class="text-5xl md:text-6xl font-bold gradient-rainbow bg-clip-text text-transparent mb-3 pulse-glow">60+</div>
+            <div class="text-secondary font-medium">💻 Languages Supported</div>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
   <!-- CTA Section -->
-  <section class="py-20 bg-primary text-white">
-    <div class="container text-center">
-      <h2 class="text-3xl md:text-4xl font-bold mb-6">
-        Ready to Level Up Your Skills?
-      </h2>
-      <p class="text-xl mb-8 max-w-2xl mx-auto opacity-90">
-        Join thousands of programmers improving their skills with CodeArena's comprehensive platform.
-      </p>
-      <a href="/register" class="bg-white text-primary px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
-        Get Started Free
-      </a>
+  <section class="py-24 gradient-animated text-white relative overflow-hidden">
+    <!-- Decorative elements -->
+    <div class="absolute inset-0 opacity-10">
+      <div class="absolute top-10 left-10 w-40 h-40 bg-white rounded-full float"></div>
+      <div class="absolute bottom-10 right-10 w-60 h-60 bg-accent rounded-full float-delayed"></div>
+      <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-secondary rounded-full opacity-50 float"></div>
+    </div>
+    
+    <div class="container text-center relative z-10">
+      <div class="max-w-4xl mx-auto">
+        <h2 class="text-4xl md:text-6xl font-bold mb-8 leading-tight">
+          Ready to Level Up Your Skills? 🚀
+        </h2>
+        <p class="text-xl md:text-2xl mb-12 max-w-3xl mx-auto opacity-95 leading-relaxed">
+          Join thousands of programmers improving their skills with CodeArena's comprehensive platform and unlock your potential.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-6 justify-center">
+          <a href="/register" class="group btn-modern glass px-12 py-5 rounded-2xl font-bold text-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 glow-primary">
+            <span class="relative z-10">✨ Get Started Free</span>
+          </a>
+          <a href="/learn-more" class="group glass border-2 border-white/30 text-white px-12 py-5 rounded-2xl font-bold text-xl hover:scale-105 transition-all duration-300">
+            📚 Learn More
+          </a>
+        </div>
+        <p class="mt-8 text-sm opacity-75">No credit card required • Free forever plan available</p>
+      </div>
     </div>
   </section>
 </MainLayout>

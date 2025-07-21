@@ -17,25 +17,25 @@ const {
   ...props
 } = Astro.props;
 
-const baseClasses = 'rounded-lg transition-all duration-200';
+const baseClasses = 'rounded-2xl transition-all duration-300';
 
 const variantClasses = {
-  default: 'bg-primary border border-primary',
-  outlined: 'bg-primary border border-secondary',
-  elevated: 'bg-primary shadow-md border border-primary',
-  flat: 'bg-secondary border-none'
+  default: 'card-modern',
+  outlined: 'glass border-2 border-primary/20',
+  elevated: 'bg-primary shadow-xl border border-primary/10',
+  flat: 'bg-secondary/50 border-none backdrop-blur-sm'
 };
 
 const paddingClasses = {
   none: '',
-  sm: 'p-3',
-  md: 'p-4',
-  lg: 'p-6',
-  xl: 'p-8'
+  sm: 'p-4',
+  md: 'p-6',
+  lg: 'p-8',
+  xl: 'p-12'
 };
 
-const hoverClasses = hover ? 'hover:shadow-lg hover:scale-[1.02]' : '';
-const clickableClasses = clickable ? 'cursor-pointer' : '';
+const hoverClasses = hover ? 'hover:shadow-2xl hover:scale-105 hover:-translate-y-2' : '';
+const clickableClasses = clickable ? 'cursor-pointer hover:shadow-colored' : '';
 
 const classes = `${baseClasses} ${variantClasses[variant]} ${paddingClasses[padding]} ${hoverClasses} ${clickableClasses} ${className}`;
 ---

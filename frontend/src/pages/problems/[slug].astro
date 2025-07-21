@@ -1,6 +1,14 @@
 ---
 import MainLayout from '../../layouts/MainLayout.astro';
 
+// Static paths for Astro static generation
+export async function getStaticPaths() {
+  return [
+    { params: { slug: 'two-sum' } },
+    { params: { slug: 'maximum-subarray' } }
+  ];
+}
+
 // Get the slug from the URL
 const { slug } = Astro.params;
 

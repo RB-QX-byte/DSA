@@ -1,16 +1,27 @@
 groups:
   - name: judge_system_alerts
     rules:
-      # High API latency alert
+      # High API latency alert (100ms threshold as specified)
       - alert: HighAPILatency
-        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 0.1
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="api-server"}[5m])) > 0.1
         for: 2m
         labels:
           severity: warning
           service: api
         annotations:
           summary: "High API latency detected"
-          description: "95th percentile latency is {{ $value }}s for {{ $labels.instance }}"
+          description: "95th percentile latency is {{ $value | humanizeDuration }} for {{ $labels.instance }}"
+
+      # Critical API latency alert
+      - alert: CriticalAPILatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="api-server"}[5m])) > 0.5
+        for: 1m
+        labels:
+          severity: critical
+          service: api
+        annotations:
+          summary: "Critical API latency detected"
+          description: "95th percentile latency is {{ $value | humanizeDuration }} for {{ $labels.instance }}"
 
       # High error rate alert
       - alert: HighErrorRate
@@ -25,14 +36,39 @@ groups:
 
       # Judge queue backup alert
       - alert: JudgeQueueBackup
-        expr: judge_queue_size > 100
+        expr: sum(asynq_queue_size{queue="default"}) > 50
         for: 2m
         labels:
           severity: warning
           service: judge
+          queue: default
         annotations:
           summary: "Judge queue backup detected"
-          description: "Judge queue has {{ $value }} pending submissions"
+          description: "Default judge queue has {{ $value }} pending submissions"
+
+      # Critical judge queue backup alert
+      - alert: CriticalJudgeQueueBackup
+        expr: sum(asynq_queue_size{queue="default"}) > 200
+        for: 1m
+        labels:
+          severity: critical
+          service: judge
+          queue: default
+        annotations:
+          summary: "Critical judge queue backup detected"
+          description: "Default judge queue has {{ $value }} pending submissions - immediate attention required"
+
+      # Critical priority queue backup alert
+      - alert: CriticalQueueBackup
+        expr: sum(asynq_queue_size{queue="critical"}) > 10
+        for: 1m
+        labels:
+          severity: critical
+          service: judge
+          queue: critical
+        annotations:
+          summary: "Critical priority queue backup detected"
+          description: "Critical queue has {{ $value }} pending submissions"
 
       # High memory usage alert
       - alert: HighMemoryUsage

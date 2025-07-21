@@ -617,7 +617,7 @@
           1,
           3
         ],
-        "status": "in-progress",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -659,7 +659,7 @@
               3
             ],
             "details": "Create a primary 'System Overview' dashboard in Grafana. Add panels to visualize critical metrics like API latency (p95/p99), error rates, resource usage (CPU/Memory), and submission queue depth. Create a separate panel or dashboard to visualize distributed traces, linking them to logs and metrics.",
-            "status": "in-progress",
+            "status": "done",
             "testStrategy": "Review the created dashboards under normal load to ensure all panels are populated with accurate, real-time data. Manually cross-reference dashboard values with direct queries in Prometheus to validate correctness."
           },
           {
@@ -670,7 +670,7 @@
               4
             ],
             "details": "Deploy and configure Prometheus Alertmanager. Define alerting rules in a Prometheus configuration file for critical thresholds, such as API latency exceeding 100ms, a significant increase in error rates, or the submission queue backing up beyond a set limit. Configure Alertmanager to route these alerts to a notification channel (e.g., Slack or PagerDuty).",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Intentionally trigger an alert condition (e.g., by introducing a delay in an API endpoint or pushing many tasks to the queue). Verify that the alert transitions to a 'firing' state in Prometheus and that a notification is successfully delivered to the configured channel via Alertmanager."
           }
         ]
@@ -678,7 +678,7 @@
     ],
     "metadata": {
       "created": "2025-07-18T13:29:55.647Z",
-      "updated": "2025-07-20T17:03:15.097Z",
+      "updated": "2025-07-21T04:44:48.845Z",
       "description": "Tasks for master context"
     }
   }
